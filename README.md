@@ -80,9 +80,7 @@ et Up Environment(Tested in Fedora 8/9 and Ubuntu)
          - Extract tools/openwrt-gcc463.mips.mesh.tar.bz2 directory to /opt
            (sudo tar -xvf openwrt-gcc463.mips.mesh.tar.bz2 -C /opt/)
            
-         - Copy unum.tgz under release/src/router/unum/
-         
-         - Goto the directory release/src-qca
+         - Goto the directory release
          
          - Issue the command "./build.sh asus_map_ac1750"
          
