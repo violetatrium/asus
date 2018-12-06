@@ -2,11 +2,17 @@
 Asus Lyra (MAP 1750) Router set is a WiFi System. Following are the specifications.
 
 cpu model		: MIPS 74Kc V5.0
+
 BogoMIPS		: 385.84
+
 RAM Size        : 128MB
+
 Flash Size      : 64MB
 
-    1. prepare environment
+Build involves two steps ie preparing th build system and build instructions.
+
+
+    1. prepare build system
 
         a. Ubuntu
                 Install these packages (I used synaptic: "sudo synaptic")
