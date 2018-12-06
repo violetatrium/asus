@@ -77,6 +77,7 @@ et Up Environment(Tested in Fedora 8/9 and Ubuntu)
                 If you are using Fedora 24+, you may need to install 32-bit packages listed below.
                         ncurses-compat-libs.i686
 2. For Asus LYRA Trio (MAP AC1750):
+         
          - Extract tools/openwrt-gcc463.mips.mesh.tar.bz2 directory to /opt
            (sudo tar -xvf openwrt-gcc463.mips.mesh.tar.bz2 -C /opt/)
            
