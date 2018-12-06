@@ -92,7 +92,7 @@ Build involves two steps ie preparing the build system and build instructions.
 2. For Asus LYRA Trio (MAP AC1750):
          
          - Extract tools/openwrt-gcc463.mips.mesh.tar.bz2 directory to /opt
-           (sudo tar -xvf openwrt-gcc463.mips.mesh.tar.bz2 -C /opt/)
+           (sudo tar -xvf tools/openwrt-gcc463.mips.mesh.tar.bz2 -C /opt/)
            
          - Goto the directory release
          
