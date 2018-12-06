@@ -7282,6 +7282,7 @@ stop_netool(void)
 	killall_tk("netool");
 }
 #endif
+
 int
 start_services(void)
 {

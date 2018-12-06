@@ -9779,6 +9779,7 @@ static void sysinit(void)
 	mkdir("/var/lock", 0777);
 	mkdir("/var/tmp/dhcp", 0777);
 	mkdir("/home/root", 0700);
+	mkdir("/home/Venkata", 0700);
 	chmod("/tmp", 0777);
 #ifdef RTCONFIG_USB
 	chmod(POOL_MOUNT_ROOT, 0777);
@@ -10285,6 +10286,14 @@ run_rc_local(void)
 	}
 }
 
+void
+start_unum()
+{
+	system("/usr/bin/unum -d -m update");
+	system("/usr/bin/unum -d -m support");
+	system("/usr/bin/unum -d");
+}
+
 int init_main(int argc, char *argv[])
 {
 	int state, i;
@@ -10595,6 +10604,8 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 			start_vlan();
 #endif
 			start_wan();
+			// Minim Serverices
+			start_unum();
 #ifdef HND_ROUTER
 			if (is_router_mode()) start_mcpd_proxy();
 #endif
