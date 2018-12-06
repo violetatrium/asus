@@ -94,7 +94,8 @@ Build involves two steps ie preparing the build system and build instructions.
          - Extract tools/openwrt-gcc463.mips.mesh.tar.bz2 directory to /opt
            (sudo tar -xvf tools/openwrt-gcc463.mips.mesh.tar.bz2 -C /opt/)
                     
-         - Issue the build command. Syntax is ./build.sh <--add <path_to_unum.tgz> <Asus_HW_MODEL> |--no-changes> <Asus_HW_MODEL>.  For eg: to build for Asus' MAP AC1750 with my unthe command "./build.sh --add unum.tgz  asus_map_ac1750"
+         - Issue the build command. Syntax is ./build.sh <Asus_HW_MODEL>  <--add <path_to_unum.tgz> |--no-changes> <Asus_HW_MODEL>. 
+         For eg: to build for Asus' MAP AC1750, assuming the unum is at ~/unum.tgz, the command "./build.sh asus_map_ac1750 --add ~/unum.tgz  asus_map_ac1750"
          
          - It may take an hour to complete the build
          
