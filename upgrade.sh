@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$1" = "" ] || [ "$2" = ""]; then
+if [ "$1" == "" ] || [ "$2" == ""]; then
   echo "Usage: $0 <AP_IP_ADDRESS> <AP_SSH_PASSWORD> [FIRMWARE_FILE]"
   echo "Make sure you have ssh and sshpass..."
   echo "sudo apt-get install sshpass"
@@ -23,18 +23,22 @@ SSHOPT="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 if [ ! -f "$FIRMWARE_FILE" ]; then
   echo "Error: firmware file not found:"
   echo "       $FIRMWARE_FILE"
-  cd -
   exit 1
 fi
 
 echo "Uploading the firmware..."
 echo "sshpass -p \"$PASSWD\" /usr/bin/scp $SSHOPT \"$FIRMWARE_FILE\" admin@$IP:/tmp/linux.trx"
-sshpass -p "$PASSWD" /usr/bin/scp $SSHOPT "$FIRMWARE_FILE" admin@$IP:/tmp/firmware.bin
+sshpass -p "$PASSWD" /usr/bin/scp $SSHOPT "$FIRMWARE_FILE" admin@$IP:/tmp/linux.trx
 if [ $? -ne 0 ]; then
   echo "Error: failed to upload the test firmware file to AP!"
-  cd -
   exit 5
 fi
-echo "Sending command to flash the new firmware..."
-echo "sshpass -p \"$PASSWD\" ssh $SSHOPT admin@$IP -C \"/sbin/rc rc_service restart_upgrade\""
-sshpass -p "$PASSWD" ssh $SSHOPT admin@$IP -C "/sbin/rc rc_service restart_upgrade"
+echo "Sending command to flash the new firmware... It may take atleast 2 minutes."
+echo "sshpass -p \"$PASSWD\" ssh $SSHOPT admin@$IP -C \"nohup /sbin/mtd-write -i /tmp/linux.trx -d linux\""
+sshpass -p "$PASSWD" ssh $SSHOPT admin@$IP -C "nohup /sbin/mtd-write -i /tmp/linux.trx -d linux"
+echo "Wait for 5 seconds before rebooting"
+sleep 10
+echo "Reboot"
+
+echo "sshpass -p \"$PASSWD\" ssh $SSHOPT admin@$IP -C \"/sbin/reboot\""
+sshpass -p "$PASSWD" ssh $SSHOPT admin@$IP -C "/sbin/reboot"
