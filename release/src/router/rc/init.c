@@ -10358,7 +10358,8 @@ int init_main(int argc, char *argv[])
 	// 1. passwd don't need to write too early.
 	// 2. the PMS table is existed at /jffs.
 	setup_passwd();
-
+	//Disable SFE
+        nvram_set("qca_sfe", "0");
 #if defined(RTCONFIG_PSISTLOG)
 		//set soft link for some app such as 3ginfo.sh
 		char *syslog[]  = { "/tmp/syslog.log", "/tmp/syslog.log-1" };
