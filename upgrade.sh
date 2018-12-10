@@ -1,6 +1,10 @@
 #!/bin/bash
 
-if [ "$1" == "" ] || [ "$2" == ""]; then
+echo "$1"
+echo "$2"
+
+
+if [ "$1" == "" ] || [ "$2" == "" ]; then
   echo "Usage: $0 <AP_IP_ADDRESS> <AP_SSH_PASSWORD> [FIRMWARE_FILE]"
   echo "Make sure you have ssh and sshpass..."
   echo "sudo apt-get install sshpass"
