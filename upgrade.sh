@@ -33,7 +33,7 @@ if [ $? -ne 0 ]; then
   echo "Error: failed to upload the test firmware file to AP!"
   exit 5
 fi
-echo "Sending command to flash the new firmware... It may take atleast 2 minutes."
+echo "Sending commands to flash the new firmware... It may take atleast 3 minutes."
 echo "sshpass -p \"$PASSWD\" ssh $SSHOPT admin@$IP -C \"nohup /sbin/mtd-write -i /tmp/linux.trx -d linux\""
 sshpass -p "$PASSWD" ssh $SSHOPT admin@$IP -C "nohup /sbin/mtd-write -i /tmp/linux.trx -d linux"
 echo "Wait for 5 seconds before rebooting"
