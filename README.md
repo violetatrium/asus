@@ -10,6 +10,20 @@ RAM Size        : 128MB
 
 Flash Size      : 64MB
 
+Serial Pin Connections:
+This Router does n't come with Serial pins, but you can make it with soldering.
+
+Serial setup is just adjacent to the LAN port (4-holes)
+
+Pinout (From LAN port) and how-to connect
+   Asus Router                             CP2102 module
+   * Dont' use
+   * Rx  --------------------------------- Tx
+   * GND --------------------------------- GND
+   * Tx  -------------`*------------------ Rx
+
+Build:
+
 Build involves two steps ie preparing the build system and build instructions.
 
 
