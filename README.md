@@ -17,7 +17,7 @@ Serial setup is just adjacent to the LAN port (4-holes)
 
 Pinout (From LAN port) and how-to connect
 
-   Asus Router                             CP2102 module
+   Asus Router   ----------------------------   CP2102 module
 
    * Dont' use
    * Rx  --------------------------------- Tx
