@@ -16,7 +16,9 @@ This Router does n't come with Serial pins, but you can make it with soldering.
 Serial setup is just adjacent to the LAN port (4-holes)
 
 Pinout (From LAN port) and how-to connect
+
    Asus Router                             CP2102 module
+
    * Dont' use
    * Rx  --------------------------------- Tx
    * GND --------------------------------- GND
