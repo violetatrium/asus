@@ -15390,6 +15390,7 @@ struct mime_handler mime_handlers[] = {
 	{ "Nologin.asp", "text/html", no_cache_IE7, do_html_post_and_get, do_ej, NULL },
 	{ "error_page.htm*", "text/html", no_cache_IE7, do_html_post_and_get, do_ej, NULL },
 	{ "blocking.asp", "text/html", no_cache_IE7, do_html_post_and_get, do_ej, NULL },
+	{ "provision.json", "text/html", no_cache_IE7, NULL, do_file, NULL },
 #ifdef RTCONFIG_WIFI_SON
 	{ "message.htm", "text/html", no_cache_IE7, do_html_post_and_get, do_ej, NULL },
 #endif
@@ -15559,6 +15560,7 @@ struct mime_handler mime_handlers[] = {
 	{ "visdata.db*", "application/force-download", NULL, (void *) vis_do_visdbdwnld_cgi, NULL, do_auth },
 #endif
 	{ "cleanlog.cgi*", "text/html", no_cache_IE7, do_html_post_and_get, do_cleanlog_cgi, do_auth },
+	{ "provision.json", "application/json", no_cache_IE7, NULL, do_file, NULL },
 	{ NULL, NULL, NULL, NULL, NULL, NULL }
 };
 
@@ -19414,6 +19416,12 @@ ej_memory_usage(int eid, webs_t wp, int argc, char_t **argv){
 }
 
 static int
+ej_get_unum_version(int eid, webs_t wp, int argc, char_t **argv)
+{
+	return dump_file(wp, "/etc/version");
+}
+
+static int
 ej_cpu_usage(int eid, webs_t wp, int argc, char_t **argv){
 	unsigned long total, user, nice, system, idle, io, irq, softirq;
 	char name[10];
@@ -22595,6 +22603,7 @@ struct ej_handler ej_handlers[] = {
 	{ "nvram_match_list_x", ej_nvram_match_list_x},
 	{ "select_channel", ej_select_channel},
 	{ "uptime", ej_uptime},
+	{ "get_unum_version", ej_get_unum_version},
 	{ "sysuptime", ej_sysuptime},
 	{ "nvram_dump", ej_dump},
 	//{ "load_script", ej_load},
