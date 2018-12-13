@@ -10,6 +10,17 @@ RAM Size        : 128MB
 
 Flash Size      : 64MB
 
+Partion Layout:
+
+dev:    size   erasesize  name
+mtd0: 00040000 00010000 "Bootloader"
+mtd1: 00010000 00010000 "nvram"
+mtd2: 00010000 00010000 "Factory"
+mtd3: 01ca0000 00010000 "linux"
+mtd4: 01b5a880 00010000 "rootfs"
+mtd5: 00300000 00010000 "jffs2"
+mtd6: 02000000 00010000 "ALL"
+
 Serial Pin Connections:
 This Router does n't come with Serial pins, but you can make it with soldering.
 
