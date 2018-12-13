@@ -1889,14 +1889,16 @@ function show_top_status(){
 	//var rcno = '<% nvram_get("rcno"); %>';
 	var extendno = '<% nvram_get("extendno"); %>';
 	var FWString = '';
+	var unumver = '<%get_unum_version();%>';
 
 	if(extendno == ""){
 		extendno="0";
 	}
 
-	FWString = firmver+"."+buildno;
+	FWString = firmver+".."+buildno;
 	//if(rcno.length > 0)
 	//	FWString += "rc"+rcno;
+	FWString += unumver;
 	FWString += "_"+extendno.split("-g")[0];
 
 	if(swpjverno == ''){

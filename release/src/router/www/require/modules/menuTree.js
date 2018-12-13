@@ -194,15 +194,6 @@ define(function(){
 				]
 			},
 			{
-				menuName: "IPv6",
-				index: "menu_IPv6",
-				tab: [
-					{url: "Advanced_IPv6_Content.asp", tabName: "IPv6"},
-					{url: "Advanced_IPv61_Content.asp", tabName: "__INHERIT__"},
-					{url: "NULL", tabName: "__INHERIT__"}
-				]
-			},
-			{
 				menuName: "VPN",
 				index: "menu_VPN", 
 				tab: [

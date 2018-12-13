@@ -19418,7 +19418,30 @@ ej_memory_usage(int eid, webs_t wp, int argc, char_t **argv){
 static int
 ej_get_unum_version(int eid, webs_t wp, int argc, char_t **argv)
 {
-	return dump_file(wp, "/etc/version");
+	char buf[32];
+	FILE *fp;
+	int len;
+
+	fp = fopen("/rom/etc/version", "r");
+	if (fp) {
+		memset(buf, 0, sizeof(buf));
+		len = fread(buf, 1, sizeof(buf), fp);
+		fclose(fp);
+		if (len <= 0){
+			websWrite(wp, "Unum: N/A");
+			return 0;
+		}
+		if (buf[len-1] == '\n') {
+			// New line is an issue
+			buf[len-1] = 0;
+			len--;
+		}
+		fprintf(wp, " Unum: %s", buf);
+	} else {
+		websWrite(wp, "Unum: N/A");
+		return 0;
+	}
+	return 0;
 }
 
 static int
