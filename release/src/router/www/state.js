@@ -1898,8 +1898,8 @@ function show_top_status(){
 	FWString = firmver+".."+buildno;
 	//if(rcno.length > 0)
 	//	FWString += "rc"+rcno;
-	FWString += unumver;
 	FWString += "_"+extendno.split("-g")[0];
+	FWString += unumver;
 
 	if(swpjverno == ''){
 		if(swisscom_support)
