@@ -176,15 +176,6 @@ define(function(){
 				]
 			},
 			{
-				menuName: "IPv6",
-				index: "menu_IPv6",
-				tab: [
-					{url: "Advanced_IPv6_Content.asp", tabName: "IPv6"},
-					{url: "Advanced_IPv61_Content.asp", tabName: "__INHERIT__"},
-					{url: "NULL", tabName: "__INHERIT__"}
-				]
-			},
-			{
 				menuName: "VPN",
 				index: "menu_VPN", 
 				tab: [
@@ -232,7 +223,6 @@ define(function(){
 					{url: "Main_LogStatus_Content.asp", tabName: "<#menu5_7_2#>"},
 					{url: "Main_WStatus_Content.asp", tabName: "<#menu5_7_4#>"},
 					{url: "Main_DHCPStatus_Content.asp", tabName: "<#menu5_7_3#>"},
-					{url: "Main_IPV6Status_Content.asp", tabName: "IPv6"},
 					{url: "Main_RouteStatus_Content.asp", tabName: "<#menu5_7_6#>"},
 					{url: "Main_IPTStatus_Content.asp", tabName: "<#menu5_7_5#>"},
 					{url: "Main_AdslStatus_Content.asp", tabName: "<#menu_dsl_log#>"},
@@ -280,10 +270,6 @@ define(function(){
 					retArray.push("menu_AiCloud");
 				}
 
-				if(!IPv6_support){
-					retArray.push("menu_IPv6");
-				}
-
 				if(!networkTool_support){
 					retArray.push("menu_NekworkTool");
 				}
@@ -309,7 +295,6 @@ define(function(){
 					retArray.push("menu_BandwidthMonitor");
 					retArray.push("menu_AiProtection");
 					retArray.push("menu_WAN");
-					retArray.push("menu_IPv6");
 					retArray.push("menu_VPN");
 					retArray.push("menu_VLAN");
 					retArray.push("menu_Firewall");
@@ -329,7 +314,6 @@ define(function(){
 					retArray.push("menu_BandwidthMonitor");
 					retArray.push("menu_AiProtection");
 					retArray.push("menu_WAN");
-					retArray.push("menu_IPv6");
 					retArray.push("menu_VPN");
 					retArray.push("menu_VLAN");
 					retArray.push("menu_Firewall");
@@ -343,7 +327,6 @@ define(function(){
 					retArray.push("menu_AiProtection");
 					retArray.push("menu_Wireless");
 					retArray.push("menu_WAN");
-					retArray.push("menu_IPv6");
 					retArray.push("menu_VPN");
 					retArray.push("menu_VLAN");
 					retArray.push("menu_Firewall");
@@ -496,10 +479,6 @@ define(function(){
 
 				if(!wtfast_support){
 					retArray.push("GameBoost.asp");
-				}
-
-				if(!IPv6_support){
-					retArray.push("Main_IPV6Status_Content.asp");
 				}
 
 				if(!fbwifi_support){
