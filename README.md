@@ -8,7 +8,7 @@ BogoMIPS		: 385.84
 
 RAM Size        : 128MB
 
-Flash Size      : 64MB
+Flash Size      : 32MB
 
 Partion Layout:
 
