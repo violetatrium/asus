@@ -36,7 +36,6 @@ echo $MODEL
 export PATH=/opt/openwrt-gcc463.mips.mesh/bin:$PATH
 export STAGING_DIR=/opt/openwrt-gcc463.mips
 # Create a link to provision file
-ln -sf /var/provision_info.htm release/src/router/www/provision.json
 cd release/src-qca
 make $MODEL
 cd $mydir
