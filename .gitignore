@@ -2,6 +2,7 @@
 *.cmd
 *.so
 *.a
+*.copts_*
 release/src/router/extendno.conf
 release/src/router/glib-2.37.7/m4macros/ltsugar.m4
 release/src/router/glib-2.37.7/tests/gobject/testmarshal.c
