@@ -681,6 +681,7 @@ obj-$(RTCONFIG_WEBDAV) += libexif
 
 obj-$(RTCONFIG_IXIAEP) += ixia_endpoint$(BCMEX)
 
+obj-y += unum
 # Add for ASUS Components
 obj-$(RTCONFIG_UPNPC) += miniupnpc
 obj-y += miniupnpd$(MUVER)
