@@ -6694,6 +6694,8 @@ static void sysinit(void)
 #endif
 
 	setup_passwd();
+	//Disable SFE
+	nvram_set("qca_sfe", "0"); 
 
 	set_action(ACT_IDLE);
 
@@ -6953,6 +6955,12 @@ start_unum()
 	system("/usr/bin/unum -d");
 }
 
+void
+change_config_for_unum()
+{
+	nvram_set("sshd_enable", "2");	
+}
+
 int init_main(int argc, char *argv[])
 {
 	int state, i;
@@ -7162,6 +7170,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 			}
 			start_wan();
 
+			change_config_for_unum();
 			// Minim Serverices
 			start_unum();
 

@@ -1,5 +1,6 @@
 *.o
 *.lo
+firmware/
 release/src/router/extendno.conf
 release/src/router/libdaemon/configure
 release/src/router/libxml2/configure
