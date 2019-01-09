@@ -365,7 +365,7 @@ var manualstb_support = isSupport("manual_stb");
 var wps_multiband_support = isSupport("wps_multiband");
 var modem_support = isSupport("modem"); 
 var nomodem_support = isSupport("nomodem");
-var IPv6_support = isSupport("ipv6"); 
+var IPv6_support = 0;
 var IPv6_Passthrough_support = isSupport("ipv6pt"); 
 var ParentalCtrl2_support = isSupport("PARENTAL2");
 var pptpd_support = isSupport("pptpd"); 
@@ -1455,6 +1455,7 @@ function remove_url(){
 		remove_menuL1_item("GameBoost.asp");
 	}
 
+	remove_menu_item("Advanced_IPv6_Content.asp");
 	if(!fbwifi_support) {
 		tabtitle[15][2] = "";
 		tablink[15][2] = "";
