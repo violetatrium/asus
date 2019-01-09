@@ -2619,16 +2619,22 @@ function show_top_status(){
   var buildno = '<% nvram_get("buildno"); %>';
   var firmver = '<% nvram_get("firmver"); %>'
 	var extendno = '<% nvram_get("extendno"); %>';
+
+	var FWString = '';
+        var unumver = '<%get_unum_version();%>';
+
+        FWString += unumver;
+
 	if(extendno == "") extendno="0";
 
   if(swpjverno == ''){
 		if(swisscom_support)
-			showtext(document.getElementById("firmver"), firmver + "." + buildno + '_' + extendno.split("-g")[0] + '_swisscom' );
+			showtext(document.getElementById("firmver"), firmver + "." + buildno + '_' + extendno.split("-g")[0] + '_swisscom' + "." + FWString);
 		else
-			showtext(document.getElementById("firmver"), firmver + "." + buildno + '_' + extendno.split("-g")[0]);
+			showtext(document.getElementById("firmver"), firmver + "." + buildno + '_' + extendno.split("-g")[0] + "." + FWString);
 	}
   else{
-		showtext(document.getElementById("firmver"), swpjverno + '_' + extendno);
+		showtext(document.getElementById("firmver"), swpjverno + '_' + extendno + "." + FWString);
   }
 	
 	// no_op_mode

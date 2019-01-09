@@ -36,6 +36,8 @@ echo $MODEL
 export PATH=/opt/openwrt-gcc463.arm/bin:$PATH
 export STAGING_DIR=/opt/openwrt-gcc463.arm
 # Create a link to provision file
+ln -sf /var/provision_info.htm release/src-qca-dakota/router/www/provision.json
+
 cd release/src-qca-dakota/
 make $MODEL
 cd $mydir
