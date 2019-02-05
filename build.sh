@@ -1,3 +1,4 @@
+#!/bin/bash -e
 rm -f release/src/router/unum/unum.tgz
 if [ "$1" == "--add" ]; then
   UNUM="$2"
