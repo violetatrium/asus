@@ -1,15 +1,24 @@
 
 
-Asus MAP 1300) Router set is 11AC WiFi. Following are the specifications.
+Asus MAP 1300 Router set is a 11AC WiFi Router. Following are the specifications.
 
-cpu model		: ARM Quadcode
+cpu model		: ARM Quadcore
 
 RAM Size        : 128MB
 
 Flash Size      : 128MB
 
 Serial Pin Connections:
-To be updated
+As marked on the board. There are 4-pins marked VCC, RX, GND and TX 
+behind WAN port.
+
+   Asus Router   ----------------------------   CP2102 module
+
+   * VCC ---------------------------------- Leave it. Dont connect anything.
+   * Rx  --------------------------------- Tx
+   * GND --------------------------------- GND
+   * Tx  -------------`*------------------ Rx
+
 
 Build:
 
