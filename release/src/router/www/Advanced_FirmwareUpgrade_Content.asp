@@ -169,7 +169,6 @@ function initial(){
 
 	if(based_modelid == "RT-AC68A"){        //MODELDEP : Spec special fine tune
 		document.getElementById("fw_note2").style.display = "none";
-		document.getElementById("fw_note3").style.display = "none";
 		inputCtrl(document.form.file, 0);
 		inputCtrl(document.form.upload, 0);
 	}
@@ -710,7 +709,6 @@ function transferTimeFormat(time){
 					<li><#FW_n0#></li>
 					<li><#FW_n1#></li>
 					<li id="fw_note2"><#FW_n2#></li>
-					<li id="fw_note3"><#FW_desc0#></li>
 				</ol>
 		  </div>
 		  <br>
@@ -760,21 +758,6 @@ function transferTimeFormat(time){
 					<div>
 						<span id="sig_status" style="display:none"></span>
 						<img id="sig_update_scan" style="display:none;" src="images/InternetScan.gif">
-					</div>
-				</td>
-			</tr>
-			<tr>
-				<th><#FW_item2#></th>
-				<td>
-					<input type="text" name="firmver_table" class="input_20_table" value="<% nvram_get("firmver"); %>.<% nvram_get("buildno"); %>_<% nvram_get("extendno"); %>" readonly="1" autocorrect="off" autocapitalize="off">&nbsp&nbsp&nbsp<!--/td-->
-					<input type="button" id="update" name="update" class="button_gen" style="display:none;" onclick="detect_update(document.start_update.firmware_path.value);" value="<#liveupdate#>" />
-					<span id="beta_firmware_path_span" style="display:none;">
-						<input type="checkbox" name="beta_firmware_path" id="beta_firmware_path" onclick="change_firmware_path(this.checked==true);"  <% nvram_match("firmware_path", "1", "checked"); %>><#get_beta#></input>
-					</span>
-					<div id="linkpage_div" class="button_helplink" style="margin-left:200px;margin-top:-25px;display:none;"><a id="linkpage" target="_blank"><div style="padding-top:5px;"><#liveupdate#></div></a></div>
-					<div id="check_states">
-						<span id="update_states"></span>
-						<img id="update_scan" style="display:none;" src="images/InternetScan.gif" />
 					</div>
 				</td>
 			</tr>
