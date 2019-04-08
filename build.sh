@@ -38,6 +38,9 @@ export STAGING_DIR=/opt/openwrt-gcc463.arm
 # Create a link to provision file
 #ln -sf /var/provision_info.htm release/src-qca-dakota/router/www/provision_info.htm
 
+# lighttpd is unhappy being rebuilt
+rm -rf release/src/router/lighttpd-1.4.39
+
 cd release/src-qca-dakota/
 make $MODEL
 cd $mydir
