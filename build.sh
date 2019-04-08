@@ -2,7 +2,7 @@
 rm -f release/src/router/unum/unum.tgz
 
 # lighttpd is unhappy being rebuilt
-git checkout HEAD -- release/src/router/lighttpd-1.4.39
+git clean -xdf -- release/src/router/lighttpd-1.4.39
 
 if [ "$1" == "--add" ]; then
   UNUM="$2"
