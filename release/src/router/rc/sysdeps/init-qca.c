@@ -1299,6 +1299,7 @@ void init_syspara(void)
 
 #if defined(RTCONFIG_SOC_IPQ8064)
 	/* Hack et0macaddr/et1macaddr after MAC address checking of wl_mssid. */
+pppp
 	ether_atoe(macaddr, buffer);
 	buffer[5] += 1;
 	ether_etoa(buffer, macaddr);
@@ -1317,8 +1318,8 @@ void init_syspara(void)
 	nvram_set("et1macaddr", macaddr);
 #else
 	//TODO: separate for different chipset solution
-	nvram_set("et0macaddr", macaddr);
-	nvram_set("et1macaddr", macaddr2);
+	nvram_set("et0macaddr", macaddr2);
+	nvram_set("et1macaddr", macaddr);
 #endif
 
 	dst = (unsigned char*) country_code;
