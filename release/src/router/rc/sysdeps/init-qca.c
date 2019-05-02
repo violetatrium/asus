@@ -1088,6 +1088,11 @@ static void __load_wifi_driver(int testmode)
 		tweak_wifi_ps(VPHY_5G);
 #endif
 	}
+#if defined(RTCONFIG_SOC_IPQ40XX)
+	// For AC1300 stats
+	eval("iwpriv", (char*) VPHY_2G, "enable_ol_stats", "1");
+	eval("iwpriv", (char*) VPHY_5G, "enable_ol_stats", "1");
+#endif
 }
 
 void load_wifi_driver(void)
