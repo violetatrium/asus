@@ -46,6 +46,7 @@ Build involves two steps ie preparing the build system and build instructions.
                 autoconf
                 autopoint (or gettext)
                 libtool
+                libtool-bin
                 shtool
                 autogen
                 mtd-utils
@@ -64,7 +65,7 @@ Build involves two steps ie preparing the build system and build instructions.
                 liblzo2-dev
                 uuid-dev
                 build-essential
-               lzma-dev
+                lzma-dev
                 liblzma-dev
                 lzma
                 binutils-dev

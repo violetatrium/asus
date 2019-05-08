@@ -24,6 +24,7 @@ Set Up Environment(Tested in Fedora 8/9 and Ubuntu)
 		autoconf
 		autopoint (or gettext)
 		libtool
+                libtool-bin
 		shtool
 		autogen
 		mtd-utils
