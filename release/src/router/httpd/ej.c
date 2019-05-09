@@ -35,7 +35,8 @@
 
 #include <httpd.h>
 #include <bcmnvram.h>
-#include <rtconfig.h>
+#include <shutils.h>
+#include <shared.h>
 
 static char * get_arg(char *args, char **next);
 static void call(char *func, FILE *stream);

@@ -296,7 +296,7 @@ int qca_mmc_init(bd_t *bis, qca_mmc *host)
 
 	memset(mmc, 0, sizeof(struct mmc));
 
-	sprintf(mmc->name, "qca_mmc");
+	snprintf(mmc->name, sizeof(mmc->name), "qca_mmc");
 	mmc->priv = host;
 	mmc->send_cmd = qca_mmc_send_cmd;
 	mmc->set_ios = qca_set_ios;

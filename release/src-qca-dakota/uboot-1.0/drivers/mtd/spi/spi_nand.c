@@ -36,7 +36,6 @@
 struct nand_chip nand_chip[CONFIG_SYS_MAX_NAND_DEVICE];
 int verify_3bit_ecc(int status);
 int verify_2bit_ecc(int status);
-int verify_2bit_ecc_toshiba(int status);
 int verify_dummy_ecc(int status);
 void gigadevice_norm_read_cmd(u8 *cmd, int column);
 void macronix_norm_read_cmd(u8 *cmd, int column);
@@ -154,7 +153,7 @@ static struct spi_nand_flash_params spi_nand_flash_tbl[] = {
 		.nr_sectors = 1024,
 		.oob_size = 64,
 		.norm_read_cmd = winbond_norm_read_cmd,
-		.verify_ecc = verify_2bit_ecc_toshiba,
+		.verify_ecc = verify_2bit_ecc,
 		.die_select = NULL,
 		.name = "TC58CVG0S3HRAIG",
 	},
@@ -551,18 +550,6 @@ int verify_2bit_ecc(int status)
 	    (ecc_status == SPINAND_2BIT_ECC_MASK))
 		return ECC_ERR;
 	else if (ecc_status == SPINAND_2BIT_ECC_CORRECTED)
-		return ECC_CORRECTED;
-	else
-		return 0;
-}
-
-int verify_2bit_ecc_toshiba(int status)
-{
-	int ecc_status = (status & SPINAND_2BIT_ECC_MASK);
-
-	if (ecc_status == SPINAND_2BIT_ECC_ERROR)
-		return ECC_ERR;
-	else if (ecc_status == SPINAND_2BIT_ECC_MASK) // over threshold
 		return ECC_CORRECTED;
 	else
 		return 0;

@@ -57,6 +57,7 @@
 
 #define CLIENT_CMD1_BASIC_DATA	1
 #define CLIENT_CMD8_RUN_CRYPTO_TEST	3
+#define CLIENT_CMD_AUTH	26
 #define MAX_APP_NAME_SIZE	32
 #define MAX_INPUT_SIZE	4096
 #define SCM_SVC_TZSCHEDULER	0xFC
@@ -147,11 +148,13 @@ static int seg0_size;
 static int seg1_size;
 static int seg2_size;
 static int seg3_size;
+static int auth_size;
 static uint8_t *mdt_file;
 static uint8_t *seg0_file;
 static uint8_t *seg1_file;
 static uint8_t *seg2_file;
 static uint8_t *seg3_file;
+static uint8_t *auth_file;
 
 static ssize_t mdt_write(struct file *filp, struct kobject *kobj,
 	struct bin_attribute *bin_attr,
@@ -267,6 +270,33 @@ static ssize_t seg3_write(struct file *filp, struct kobject *kobj,
 	return count;
 }
 
+static ssize_t auth_write(struct file *filp, struct kobject *kobj,
+	struct bin_attribute *bin_attr,
+	char *buf, loff_t pos, size_t count)
+{
+	uint8_t *tmp = NULL;
+
+	if (pos == 0) {
+		kfree(auth_file);
+		auth_file = kzalloc((count) * sizeof(uint8_t), GFP_KERNEL);
+	} else {
+		tmp = auth_file;
+		auth_file = krealloc(tmp, (pos + count) * sizeof(uint8_t),
+					GFP_KERNEL);
+	}
+
+	if (!auth_file) {
+		if (tmp)
+			kfree(tmp);
+		return -ENOMEM;
+	}
+
+	memcpy((auth_file + pos), buf, count);
+	auth_size = pos + count;
+
+	return count;
+}
+
 struct bin_attribute mdt_attr = {
 	.attr = {.name = "mdt_file", .mode = 0666},
 	.write = mdt_write,
@@ -292,6 +322,10 @@ struct bin_attribute seg3_attr = {
 	.write = seg3_write,
 };
 
+struct bin_attribute auth_attr = {
+	.attr = {.name = "auth_file", .mode = 0666},
+	.write = auth_write,
+};
 
 static int qseecom_unload_app(void)
 {
@@ -360,6 +394,7 @@ static int tzapp_test(void *input, void *output, int input_len, int option)
 
 	/*
 	 * option = 1 -> Basic Multiplication, option = 2 -> Crypto Function
+	 * option = 3 -> Authorized OTP fusing
 	 */
 	switch (option) {
 	case 1:
@@ -368,6 +403,23 @@ static int tzapp_test(void *input, void *output, int input_len, int option)
 		break;
 	case 2:
 		msgreq->cmd_id = CLIENT_CMD8_RUN_CRYPTO_TEST;
+		break;
+	case 3:
+		if (!auth_file) {
+			pr_err("No OTP file provided\n");
+			return -ENOMEM;
+		}
+
+		msgreq->cmd_id = CLIENT_CMD_AUTH;
+		msgreq->data = dma_map_single(NULL, auth_file,
+				auth_size, DMA_TO_DEVICE);
+		ret = dma_mapping_error(NULL, msgreq->data);
+		if (ret) {
+			pr_err("DMA Mapping Error Return values: otp_buffer %d",
+									ret);
+			return ret;
+		}
+
 		break;
 	default:
 		pr_err("\n Invalid Option");
@@ -393,14 +445,17 @@ static int tzapp_test(void *input, void *output, int input_len, int option)
 					sizeof(send_data_req),
 					&resp, sizeof(resp));
 	}
+
 	if (!ret1) {
 		dma_unmap_single(NULL, send_data_req.req_ptr,
 			sizeof(*msgreq), DMA_TO_DEVICE);
 	}
+
 	if (!ret2) {
 		dma_unmap_single(NULL, send_data_req.rsp_ptr,
 			sizeof(*msgrsp), DMA_FROM_DEVICE);
 	}
+
 	if (ret1 || ret2) {
 		pr_err("\nDMA Mapping Error Return values:"
 			"req_ptr %d rsp_ptr %d", ret1, ret2);
@@ -427,15 +482,30 @@ static int tzapp_test(void *input, void *output, int input_len, int option)
 				pr_info("Crypto functionality test successful\n");
 		}
 	}
+
 	if (option == 1) {
 		if (msgrsp->status) {
 			pr_err("Input size exceeded supported range\n");
 			ret = -EINVAL;
 		}
 		basic_output = msgrsp->data;
+	} else if (option == 3) {
+		if (msgrsp->status) {
+			pr_err("Auth and blow failed with response %d\n",
+							msgrsp->status);
+			ret = -EIO;
+		}
+		else
+			pr_info("Auth and blow Success");
+
 	}
 fn_exit:
 	free_page(pg_addr);
+	if (option == 3) {
+		dma_unmap_single(NULL, msgreq->data,
+			auth_size, DMA_TO_DEVICE);
+	}
+
 	return ret;
 }
 
@@ -582,6 +652,14 @@ store_crypto_input(struct device *dev, struct device *attr,
 }
 
 static ssize_t
+store_fuse_otp_input(struct device *dev, struct device *attr,
+		const char *buf, size_t count)
+{
+	tzapp_test(buf, NULL, 0, 3);
+	return count;
+}
+
+static ssize_t
 store_load_start(struct device *dev, struct device *attr,
 		const char *buf, size_t count)
 {
@@ -600,6 +678,7 @@ store_load_start(struct device *dev, struct device *attr,
 	return count;
 }
 
+static  DEVICE_ATTR(fuse_otp, 0666, NULL, store_fuse_otp_input);
 static	DEVICE_ATTR(crypto, 0666, NULL,
 					store_crypto_input);
 static	DEVICE_ATTR(basic_data, 0666, show_basic_output,
@@ -608,6 +687,7 @@ static	DEVICE_ATTR(load_start, 0222, NULL,
 					store_load_start);
 
 static struct attribute *tzapp_attrs[] = {
+	&dev_attr_fuse_otp.attr,
 	&dev_attr_crypto.attr,
 	&dev_attr_basic_data.attr,
 	&dev_attr_load_start.attr,
@@ -642,6 +722,7 @@ static int __init qseecom_init(void)
 	sysfs_create_bin_file(firmware_kobj, &seg1_attr);
 	sysfs_create_bin_file(firmware_kobj, &seg2_attr);
 	sysfs_create_bin_file(firmware_kobj, &seg3_attr);
+	sysfs_create_bin_file(firmware_kobj, &auth_attr);
 
 	if (!tzapp_init())
 		pr_info("\nLoaded Module Successfully!\n");
@@ -659,6 +740,7 @@ static void __exit qseecom_exit(void)
 	sysfs_remove_bin_file(firmware_kobj, &seg1_attr);
 	sysfs_remove_bin_file(firmware_kobj, &seg2_attr);
 	sysfs_remove_bin_file(firmware_kobj, &seg3_attr);
+	sysfs_remove_bin_file(firmware_kobj, &auth_attr);
 
 	sysfs_remove_group(tzapp_kobj, &tzapp_attr_grp);
 	kobject_put(tzapp_kobj);
@@ -668,6 +750,7 @@ static void __exit qseecom_exit(void)
 	kfree(seg1_file);
 	kfree(seg2_file);
 	kfree(seg3_file);
+	kfree(auth_file);
 	kfree(qsee_sbuffer);
 }
 MODULE_LICENSE("GPL v2");

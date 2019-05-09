@@ -66,6 +66,8 @@ DECLARE_GLOBAL_DATA_PTR;
 #define ADSS_AUDIO_PCM_CBCR_REG			0x077001AC
 #define ADSS_AUDIO_SPDIF_IN_FAST_CBCR_REG	0x077001EC
 
+#define TCSR_USB_HSPHY_DEVICE_MODE		0x00C700E7
+
 loff_t board_env_offset;
 loff_t board_env_range;
 loff_t board_env_size;
@@ -268,9 +270,9 @@ int board_init(void)
 
 	if (sfi->flash_type != SMEM_BOOT_MMC_FLASH) {
 #if defined(ASUS_PRODUCT)
-#if defined(RTAC58U) || defined(RT4GAC53U)
+#if defined(RTAC58U) || defined(RT4GAC53U) || defined(MAPAC1300) || defined(VZWAC1300)
 		board_env_offset = ORIGINAL_ENV_OFFSET;
-#elif defined(RTAC82U)
+#elif defined(RTAC82U) || defined(MAPAC2200) || defined(MAPAC3000)
 		board_env_offset = CONFIG_ENV_ADDR-CONFIG_SYS_FLASH_BASE;
 #else
 #error Define Model!
@@ -318,8 +320,7 @@ int board_init(void)
 #endif
 	}
 
-	if (gboard_param->machid == MACH_TYPE_IPQ40XX_AP_DK04_1_C2)
-		disable_audio_clks();
+	disable_audio_clks();
 
 	return 0;
 }
@@ -454,6 +455,7 @@ void board_nand_init(void)
 		(gboard_param->machid == MACH_TYPE_IPQ40XX_AP_DK06_1_C1) ||
 		(gboard_param->machid == MACH_TYPE_IPQ40XX_AP_DK07_1_C1) ||
 		(gboard_param->machid == MACH_TYPE_IPQ40XX_AP_DK07_1_C2) ||
+		(gboard_param->machid == MACH_TYPE_IPQ40XX_AP_DK07_1_C3) ||
 		(gboard_param->machid == MACH_TYPE_IPQ40XX_AP_DK04_1_C4) ||
 		(gboard_param->machid == MACH_TYPE_IPQ40XX_AP_DK04_1_C5)) {
 
@@ -470,7 +472,7 @@ void board_nand_init(void)
 		config.nand_base = IPQ40xx_EBI2ND_BASE;
 		config.ee = QPIC_NAND_EE;
 		config.max_desc_len = QPIC_NAND_MAX_DESC_LEN;
-#if !defined(RTAC82U) // we don't use QPIC LCD
+#if !defined(RTAC82U) && !defined(MAPAC3000) // we don't use QPIC LCD
 		gpio = gboard_param->nand_gpio;
 		if (gpio) {
 			qca_configure_gpio(gpio,
@@ -492,7 +494,8 @@ void board_nand_init(void)
 		spi_nand_init();
 	}
 
-	if (gboard_param->machid != MACH_TYPE_IPQ40XX_AP_DK07_1_C2) {
+	if ((gboard_param->machid != MACH_TYPE_IPQ40XX_AP_DK07_1_C2) &&
+	    (gboard_param->machid != MACH_TYPE_IPQ40XX_AP_DK07_1_C3)) {
 #ifdef CONFIG_IPQ40XX_SPI
 		ipq_spi_init(CONFIG_IPQ_SPI_NOR_INFO_IDX);
 #endif
@@ -585,13 +588,13 @@ static void ipq40xx_set_ethmac_addr(void)
 			 * dts entry for the ethernet entries, which in turn
 			 * will be picked up by the HLOS driver
 			 */
-			sprintf(mac, "%x:%x:%x:%x:%x:%x",
+			snprintf(mac, sizeof(mac), "%x:%x:%x:%x:%x:%x",
 					mac_addr[0], mac_addr[1],
 					mac_addr[2], mac_addr[3],
 					mac_addr[4], mac_addr[5]);
 			setenv(ethaddr, mac);
 		}
-		sprintf(ethaddr, "eth%daddr", (i + 1));
+		snprintf(ethaddr, sizeof(ethaddr), "eth%daddr", (i + 1));
 	}
 }
 #endif // ASUS_PRODUCT
@@ -615,16 +618,16 @@ static void phyreset_gpio_cfg(void)
 	int i;
 	switch (gboard_param->machid) {
 	case MACH_TYPE_IPQ40XX_AP_DK01_1_S1:
-	case MACH_TYPE_IPQ40XX_AP_DK01_1_C2: /* RT-AC58U, HIVEDOT, 4G-AC53U */
+	case MACH_TYPE_IPQ40XX_AP_DK01_1_C2: /* RT-AC58U, 4G-AC53U, MAP-AC1300, VZW-AC1300*/
 	case MACH_TYPE_IPQ40XX_AP_DK05_1_C1:
 		writel(GPIO_OUT, GPIO_IN_OUT_ADDR(62)); /* EV board */
 		break;
 	case MACH_TYPE_IPQ40XX_AP_DK04_1_C4:
-	case MACH_TYPE_IPQ40XX_AP_DK04_1_C1: /* RT-AC82U, HIVESPOT */
+	case MACH_TYPE_IPQ40XX_AP_DK04_1_C1: /* RT-AC82U, MAP-AC2200, MAP-AC3000 */
 	case MACH_TYPE_IPQ40XX_AP_DK04_1_C3:
 	case MACH_TYPE_IPQ40XX_AP_DK04_1_C5:
-#if defined(HIVE) && !defined(HIVE_DOT)
-		writel(GPIO_OUT, GPIO_IN_OUT_ADDR(41)); /* HIVESPOT */
+#if defined(MAPAC2200)
+		writel(GPIO_OUT, GPIO_IN_OUT_ADDR(41)); /* MAP-AC2200 */
 #else
 		writel(GPIO_OUT, GPIO_IN_OUT_ADDR(47)); /* EV board */
 #endif
@@ -696,6 +699,7 @@ int board_eth_init(bd_t *bis)
 		break;
 	case MACH_TYPE_IPQ40XX_AP_DK07_1_C1:
 	case MACH_TYPE_IPQ40XX_AP_DK07_1_C2:
+	case MACH_TYPE_IPQ40XX_AP_DK07_1_C3:
 		mdelay(1);
 		writel(GPIO_OUT, GPIO_IN_OUT_ADDR(41));
 		ipq40xx_register_switch(ipq40xx_qca8075_phy_init);
@@ -724,6 +728,62 @@ void qca_configure_gpio(gpio_func_data_t *gpio, uint count)
 			gpio->pull, gpio->drvstr, gpio->oe,
 			gpio->gpio_vm, gpio->gpio_od_en, gpio->gpio_pu_res);
 		gpio++;
+	}
+}
+
+void ipq_fdt_fixup_usb_device_mode(void *blob)
+{
+	int nodeoff, ret, i;
+	int phy_mode = htonl(TCSR_USB_HSPHY_DEVICE_MODE);
+	const char *mode = "peripheral";
+	const char *node[] = {"/soc/ssphy", "/soc/hsphy", "/soc/usb3"};
+	char *usb_cfg;
+
+	usb_cfg = getenv("usb_mode");
+	if (!usb_cfg)
+		return;
+
+	if (strcmp(usb_cfg, "device"))
+		return;
+
+	nodeoff = fdt_path_offset(blob, "/soc/tcsr");
+	if (nodeoff < 0) {
+		printf("ipq: fdt fixup unable to find node /soc/tcsr\n");
+		return;
+	}
+	ret = fdt_setprop(blob, nodeoff, "ipq,usb-hsphy-mode-select",
+					&phy_mode, sizeof(phy_mode));
+	if (ret != 0) {
+		printf("ipq: unable to set prop: %d\n", ret);
+		return;
+	}
+
+	phy_mode = 0;
+	for (i = 0; i < (sizeof(node) / sizeof(node[0])); i++) {
+		nodeoff = fdt_path_offset(blob, node[i]);
+		if (nodeoff < 0) {
+			printf("ipq: fdt fixup unable to find node %s\n",
+								node[i]);
+			continue;
+		}
+		ret = fdt_setprop(blob, nodeoff, "qca,host",
+					&phy_mode, sizeof(phy_mode));
+		if (ret != 0) {
+			printf("ipq: unable to set prop: %d\n", ret);
+			continue;
+		}
+	}
+
+	nodeoff = fdt_path_offset(blob, "/soc/usb3/dwc3");
+	if (nodeoff < 0) {
+		printf("ipq: fdt fixup unable to find node /soc/usb3/dwc3\n");
+		return;
+	}
+	ret = fdt_setprop(blob, nodeoff, "dr_mode",
+				mode, (strlen(mode) + 1));
+	if (ret != 0) {
+		printf("ipq: unable to set prop: %d\n", ret);
+		return;
 	}
 }
 
@@ -831,10 +891,10 @@ void ipq_fdt_fixup_version(void *blob)
 	int nodeoff, ret;
 	char ver[OEM_VERSION_STRING_LENGTH + VERSION_STRING_LENGTH + 1];
 
-	nodeoff = fdt_node_offset_by_compatible(blob, -1, "qcom,ipq40xx");
+	nodeoff = fdt_path_offset(blob, "/");
 
 	if (nodeoff < 0) {
-		debug("ipq: fdt fixup unable to find compatible node\n");
+		debug("ipq: fdt fixup unable to find root node\n");
 		return;
 	}
 
@@ -1150,7 +1210,7 @@ void ft_board_setup(void *blob, bd_t *bd)
 	ipq_fdt_mem_rsvd_fixup(blob);
 #endif
 	if (sfi->flash_type == SMEM_BOOT_NAND_FLASH) {
-#if defined(ASUS_PRODUCT) // RT-AC82U
+#if defined(ASUS_PRODUCT) // RT-AC82U && MAP
 		mtdparts = BOOT_MTDPARTS;
 #else
 		mtdparts = "mtdparts=nand0";
@@ -1162,16 +1222,16 @@ void ft_board_setup(void *blob, bd_t *bd)
 		if (gboard_param->spi_nand_available &&
 			get_which_flash_param("rootfs") == 0) {
 #if defined(ASUS_PRODUCT) // RT-AC58U, 4G-AC53U
-			sprintf(parts_str, BOOT_MTDPARTS);
+			snprintf(parts_str, sizeof(parts_str), BOOT_MTDPARTS);
 #else
-			sprintf(parts_str,
+			snprintf(parts_str, sizeof(parts_str),
 				"mtdparts=nand1:0x%x@0(rootfs);spi0.0",
 				IPQ_NAND_ROOTFS_SIZE);
 #endif
 			mtdparts = parts_str;
 		} else if (gboard_param->nor_nand_available &&
 			get_which_flash_param("rootfs") == 0) {
-			sprintf(parts_str,
+			snprintf(parts_str, sizeof(parts_str),
 				"mtdparts=nand0:0x%x@0(rootfs);spi0.0",
 				IPQ_NAND_ROOTFS_SIZE);
 			mtdparts = parts_str;
@@ -1205,6 +1265,7 @@ void ft_board_setup(void *blob, bd_t *bd)
 	ipq40xx_set_ethmac_addr();
 #endif
 	fdt_fixup_ethernet(blob);
+	ipq_fdt_fixup_usb_device_mode(blob);
 
 #ifdef CONFIG_QCA_MMC
         board_mmc_deinit();

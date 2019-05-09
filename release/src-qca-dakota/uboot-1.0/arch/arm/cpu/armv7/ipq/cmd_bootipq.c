@@ -79,7 +79,7 @@ static int load_nss_img(const char *runcmd, char *args, int argslen,
 		return ret;
 	}
 
-	sprintf(cmd, "bootm start 0x%x; bootm loados", CONFIG_SYS_LOAD_ADDR);
+	snprintf(cmd, sizeof(cmd), "bootm start 0x%x; bootm loados", CONFIG_SYS_LOAD_ADDR);
 
 	if (debug)
 		printf(cmd);
@@ -295,7 +295,7 @@ static int do_bootmbn(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	 * for more details
 	 */
 	if (sfi->nss[0].size != 0xBAD0FF5E) {
-		sprintf(runcmd, "nand read 0x%x 0x%llx 0x%llx",
+		snprintf(runcmd, sizeof(runcmd), "nand read 0x%x 0x%llx 0x%llx",
 				CONFIG_SYS_LOAD_ADDR,
 				sfi->nss[0].offset, sfi->nss[0].size);
 
@@ -310,7 +310,7 @@ static int do_bootmbn(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	}
 
 	if (sfi->nss[1].size != 0xBAD0FF5E) {
-		sprintf(runcmd, "nand read 0x%x 0x%llx 0x%llx",
+		snprintf(runcmd, sizeof(runcmd), "nand read 0x%x 0x%llx 0x%llx",
 				CONFIG_SYS_LOAD_ADDR,
 				sfi->nss[1].offset, sfi->nss[1].size);
 
@@ -531,7 +531,7 @@ static int do_bootipq(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	 * for more details
 	 */
 	if (sfi->nss[0].size != 0xBAD0FF5E) {
-		sprintf(runcmd, "nand read 0x%x 0x%llx 0x%llx",
+		snprintf(runcmd, sizeof(runcmd), "nand read 0x%x 0x%llx 0x%llx",
 				CONFIG_SYS_LOAD_ADDR,
 				sfi->nss[0].offset, sfi->nss[0].size);
 
@@ -546,7 +546,7 @@ static int do_bootipq(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	}
 
 	if (sfi->nss[1].size != 0xBAD0FF5E) {
-		sprintf(runcmd, "nand read 0x%x 0x%llx 0x%llx",
+		snprintf(runcmd, sizeof(runcmd), "nand read 0x%x 0x%llx 0x%llx",
 				CONFIG_SYS_LOAD_ADDR,
 				sfi->nss[1].offset, sfi->nss[1].size);
 

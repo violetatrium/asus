@@ -102,7 +102,13 @@ static void image_set_header(void *ptr, struct stat *sbuf, int ifd,
 				struct mkimage_params *params)
 {
 	uint32_t checksum;
-
+#ifdef TRX_NEW
+	uint8_t *l1,*r1;
+        uint8_t lrand = 0;
+        uint8_t rrand = 0;
+        uint32_t linux_offset = 0;
+        uint32_t rootfs_offset = 0;
+#endif
 	image_header_t * hdr = (image_header_t *)ptr;
 
 	checksum = crc32(0,
@@ -129,10 +135,34 @@ static void image_set_header(void *ptr, struct stat *sbuf, int ifd,
 	else
 	{
 		strncpy((char *)params->tail_pre.productid, params->imagename, MAX_STRING);
+#ifdef TRX_NEW
+                linux_offset = (params->rfs_offset) / 2 ;
+                l1=(ptr + linux_offset); //get kernel data
+		lrand=*l1;
+        //printf("rfs_offset = %02x  lrand = %02x linux_offset=%02x\n", params->rfs_offset, lrand, linux_offset);
+                rootfs_offset =  (params->rfs_offset) + ((sbuf->st_size  - (params->rfs_offset)) / 2 );
+		r1= (ptr + rootfs_offset); //get rootfs data
+		rrand = *r1;
+        //printf("rfs_offset = %02x  rrand = %02x  hdr->ih_size = %02x rootfs_offset=%02x\n", params->rfs_offset, rrand, sbuf->st_size - sizeof(image_header_t), rootfs_offset);
+ 
+        params->tail_pre.pkey = lrand;
+ 
+        if (rrand== 0x0)
+                params->tail_pre.key = 0xfd + lrand % 3;
+        else
+                params->tail_pre.key = 0xff - rrand + lrand;
+ 
+        printf ("Pkey:         %02x\n", params->tail_pre.pkey);
+        printf ("Key:          %02x\n", params->tail_pre.key);
+#endif
 		memcpy(&hdr->u.tail, &params->tail_pre, sizeof(TAIL));
 
 		if (params->rfs_offset) {
-			version_t *v1 = &hdr->u.tail.hw[MAX_VER*2 - 2], *v2 = v1+1;
+#ifdef TRX_NEW
+                        version_t *v1 = &hdr->u.tail.hw[MAX_VER - 2], *v2 = v1+1;
+#else
+                 	version_t *v1 = &hdr->u.tail.hw[MAX_VER*2 - 2], *v2 = v1+1;
+#endif
 			union {
 				uint32_t rfs_offset_net_endian;
 				uint8_t p[4];

@@ -140,8 +140,8 @@ enum qseecom_qceos_cmd_id {
 static uint32_t qsee_app_id;
 static void *qsee_sbuffer;
 static int32_t basic_output;
-static int enc_len;
-static int dec_len;
+static size_t enc_len;
+static size_t dec_len;
 static int basic_data_len;
 static int mdt_size;
 static int seg0_size;

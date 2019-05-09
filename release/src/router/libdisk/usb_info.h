@@ -127,7 +127,7 @@ extern int hadBeceemModule();
 extern int hadGCTModule(void);
 extern int isBeceemNode(const char *device_name);
 #endif
-extern int is_usb_modem_ready(void);
+extern int is_usb_modem_ready(int wan_type);
 #endif
 
 #ifdef RTCONFIG_USB_PRINTER
@@ -140,7 +140,7 @@ extern int isStorageDevice(const char *device_name);
 #if defined(RTCONFIG_M2_SSD)
 extern int isM2SSDDevice(const char *device_name);
 #else
-static inline int isM2SSDDevice(const char *device_name) { return 0; }
+static inline int isM2SSDDevice(__attribute__ ((unused)) const char *device_name) { return 0; }
 #endif
 #ifdef BCM_MMC
 extern int isMMCDevice(const char *device_name);

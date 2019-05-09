@@ -24,5 +24,17 @@ config 4GAC53U
 config RTAC82U
 	bool "RTAC82U (initial porting product)"
 
+config MAPAC1300
+	bool "MAP-AC1300 (initial porting product)"
+
+config VZWAC1300
+	bool "VZW-AC1300 (initial porting product)"
+
+config MAPAC2200
+	bool "MAP-AC2200 (initial porting product)"
+
+config MAPAC3000
+	bool "MAP-AC3000 (initial porting product)"
+
 endchoice
 

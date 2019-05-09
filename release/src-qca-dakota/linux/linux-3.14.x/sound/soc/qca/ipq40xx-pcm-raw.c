@@ -575,7 +575,19 @@ static int ipq40xx_pcm_driver_probe(struct platform_device *pdev)
 
 	/* Allocate memory for rx  and tx instance */
 	rx_dma_buffer = kzalloc(sizeof(struct voice_dma_buffer), GFP_KERNEL);
+	if (rx_dma_buffer == NULL) {
+		pr_err("%s: Error in allocating mem for rx_dma_buffer\n",
+				__func__);
+		return -ENOMEM;
+	}
+
 	tx_dma_buffer = kzalloc(sizeof(struct voice_dma_buffer), GFP_KERNEL);
+	if (tx_dma_buffer == NULL) {
+		pr_err("%s: Error in allocating mem for tx_dma_buffer\n",
+				__func__);
+		kfree(rx_dma_buffer);
+		return -ENOMEM;
+	}
 
 	rx_dma_buffer->channel_id = rx_channel;
 	tx_dma_buffer->channel_id = tx_channel;

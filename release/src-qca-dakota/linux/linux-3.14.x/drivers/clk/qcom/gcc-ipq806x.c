@@ -1351,7 +1351,7 @@ static struct clk_rcg sdc1_src = {
 			.name = "sdc1_src",
 			.parent_names = gcc_pxo_pll8,
 			.num_parents = 2,
-			.ops = &clk_rcg_ops,
+			.ops = &clk_rcg_floor_ops,
 			.flags = CLK_SET_RATE_GATE,
 		},
 	}

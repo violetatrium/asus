@@ -102,6 +102,7 @@
 #define OUT_FIFO_RD_TAG_BYTE_CNT		8
 #define IN_FIFO_TAG_BYTE_CNT			2
 #define OFFSET_BYTE_CNT				2
+#define OFFSET_BYTE_CNT1			1
 
 #define QUP_I2C_ADDR(x)				((x & 0xFF) << 1)
 #define QUP_I2C_DATA(x)				(x & 0xFF)

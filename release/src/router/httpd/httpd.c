@@ -78,14 +78,18 @@ typedef unsigned int __u32;   // 1225 ham
 #define SIOCGETCPHYRD   0x89FE
 //#include "etioctl.h"
 
+#include <shutils.h>
+
 #ifdef RTCONFIG_HTTPS
 #include <syslog.h>
 #include <mssl.h>
-#include <shutils.h>
+//#include <shutils.h>
 #define SERVER_PORT_SSL	443
 #endif
 #include "bcmnvram_f.h"
-
+#ifdef RTCONFIG_TCODE
+#include "tcode.h"
+#endif
 
 /* A multi-family sockaddr. */
 typedef union {
@@ -117,7 +121,9 @@ char host_name[64];
 char referer_host[64];
 char current_page_name[128];
 char user_agent[1024];
-char gen_token[32]={0};
+char gen_token[32];
+int do_ssl = 0; 	// use Global for HTTPS upgrade judgment in web.c
+int ssl_stream_fd; 	// use Global for HTTPS stream fd in web.c
 
 #ifdef TRANSLATE_ON_FLY
 char Accept_Language[16];
@@ -212,25 +218,30 @@ struct language_table language_tables[] = {
 	{NULL, NULL}
 };
 
+int check_lang_support(char *lang);
+int change_preferred_lang();
+int get_lang_num();
 #endif //TRANSLATE_ON_FLY
 
 /* Forwards. */
 static int initialize_listen_socket(usockaddr* usa, const char *ifname);
 int check_noauth_referrer(char* referer, int fromapp_flag);
-char *get_referrer(char *referer);
+char *get_referrer(char *referer, char *auth_referer, size_t length);
 static void send_error( int status, char* title, char* extra_header, char* text );
 //#ifdef RTCONFIG_CLOUDSYNC
-static void send_page( int status, char* title, char* extra_header, char* text , int fromapp);
+void send_page( int status, char* title, char* extra_header, char* text , int fromapp);
 //#endif
 static void send_headers( int status, char* title, char* extra_header, char* mime_type, int fromapp);
 static void send_token_headers( int status, char* title, char* extra_header, char* mime_type, int fromapp);
 static void handle_request(void);
-void send_login_page(int fromapp_flag, int error_status, char* url, char* file, int lock_time);
-void __send_login_page(int fromapp_flag, int error_status, char* url, char* file, int lock_time);
+void send_login_page(int fromapp_flag, int error_status, char* url, char* file, int lock_time, int logintry);
+void page_default_redirect(int fromapp_flag, char* url);
 int check_user_agent(char* user_agent);
-#ifdef RTCONFIG_IFTTT
+#if defined(RTCONFIG_IFTTT) || defined(RTCONFIG_ALEXA)
 void add_ifttt_flag(void);
 #endif
+
+int check_current_ip_is_lan_or_wan();
 
 /* added by Joey */
 //2008.08 magic{
@@ -247,6 +258,8 @@ time_t login_dt=0;
 char login_url[128];
 int login_error_status = 0;
 char cloud_file[256];
+int add_try = 0;
+
 
 /* Added by Joey for handle one people at the same time */
 unsigned int login_ip=0; // the logined ip
@@ -256,6 +269,12 @@ time_t last_login_timestamp=0; // the timestamp of the current session.
 unsigned int login_ip_tmp=0; // the ip of the current session.
 unsigned int login_try=0;
 unsigned int last_login_ip = 0;	// the last logined ip 2008.08 magic
+//Add by Andy for handle the login block mechanism by LAN/WAN
+time_t login_timestamp_tmp_wan=0; // the timestamp of the current session.
+time_t last_login_timestamp_wan=0; // the timestamp of the current session.
+time_t auth_check_dt=0;
+unsigned int login_try_wan=0;
+int cur_login_ip_type = -1;	//0:LAN, 1:WAN, -1:ERROR
 unsigned int MAX_login;
 int lock_flag = 0;
 
@@ -284,7 +303,7 @@ void sethost(char *host)
 	if(!host) return;
 
 	memset(host_name, 0, sizeof(host_name));
-	strncpy(host_name, host, sizeof(host_name)-1);
+	strlcpy(host_name, host, sizeof(host_name));
 
 	cp = host_name;
 	for ( cp = cp + 7; *cp && *cp != '\r' && *cp != '\n'; cp++ );
@@ -357,21 +376,53 @@ error:
 }
 
 void 
-send_login_page(int fromapp_flag, int error_status, char* url, char* file, int lock_time)
+page_default_redirect(int fromapp_flag, char* url)
 {
-	char inviteCode[512]={0};
+	char inviteCode[256]={0};
+
+	if(check_xss_blacklist(url, 1))
+		strncpy(login_url, INDEXPAGE, sizeof(login_url));
+	else
+		strncpy(login_url, url, sizeof(login_url));
+
+	if(fromapp_flag == 0){
+		snprintf(inviteCode, sizeof(inviteCode), "<script>top.location.href='/page_default.cgi?url=%s';</script>", url);
+	}
+	send_page( 200, "OK", (char*) 0, inviteCode, fromapp_flag);
+}
+
+void
+send_login_page(int fromapp_flag, int error_status, char* url, char* file, int lock_time, int logintry)
+{
+	char inviteCode[256]={0};
+	char buf[128] = {0};
 	//char url_tmp[64]={0};
 	char *cp, *file_var=NULL;
 
+	if(logintry){
+		if(!cur_login_ip_type)
+		{
+			++login_try;
+			if(error_status != LOGINLOCK)
+				last_login_timestamp = login_timestamp_tmp;
+		}
+		else
+		{
+			++login_try_wan;
+			if(error_status != LOGINLOCK)
+				last_login_timestamp_wan= login_timestamp_tmp_wan;
+		}
+	}
+
 	if(url == NULL)
-		strncpy(login_url, "index.asp", sizeof(login_url));
+		strncpy(login_url, INDEXPAGE, sizeof(login_url));
 	else
 		strncpy(login_url, url, sizeof(login_url));
 
 	login_dt = lock_time;
 
 	login_error_status = error_status;
-		
+
 	if(fromapp_flag == 0){
 		if(strncmp(login_url, "cloud_sync.asp", strlen(login_url))==0){
 			if(file != NULL){
@@ -383,26 +434,32 @@ send_login_page(int fromapp_flag, int error_status, char* url, char* file, int l
 				}
 			}
 		}
+		else if(strncmp(login_url, "cfg_onboarding.cgi", strlen(login_url))==0){
+			if(file != NULL){
+				cp = strstr(file,"id=");
+				if(cp != (char*) 0){
+					file_var = &cp[3];
+					if(!check_cmd_whitelist(file_var) && (strlen(file_var) == 12)){
+						memset(cloud_file, 0, sizeof(cloud_file));
+						strlcpy(cloud_file, file_var, sizeof(cloud_file));
+					}
+				}
+			}
+		}
 		snprintf(inviteCode, sizeof(inviteCode), "<script>top.location.href='/Main_Login.asp';</script>");
 	}else{
 		snprintf(inviteCode, sizeof(inviteCode), "\"error_status\":\"%d\"", error_status);
+		if(error_status == LOGINLOCK){
+			snprintf(buf, sizeof(buf), ",\"remaining_lock_time\":\"%ld\"", LOCKTIME - login_dt);
+			strcat(inviteCode, buf);
+		}
 	}
 	send_page( 200, "OK", (char*) 0, inviteCode, fromapp_flag);
 }
 
-void
-__send_login_page(int fromapp_flag, int error_status, char* url, char* file, int lock_time)
-{
-	login_try++;
-	last_login_timestamp = login_timestamp_tmp;
-
-	send_login_page(fromapp_flag, error_status, url, file, lock_time);
-}
-
 char
-*get_referrer(char *referer)
+*get_referrer(char *referer, char *auth_referer, size_t length)
 {
-	char *auth_referer=NULL;
 	char *cp1=NULL, *cp2=NULL, *location_cp=NULL, *location_cp1=NULL;
 
 	if(strstr(referer,"\r") != (char*) 0)
@@ -415,11 +472,11 @@ char
 		cp1 = &location_cp[2];
 		if(strstr(cp1,"/") != (char*) 0){
 			cp2 = strtok(cp1, "/");
-			auth_referer = cp2;
+			strlcpy(auth_referer , cp2, length);
 		}else
-			auth_referer = cp1;
+			strlcpy(auth_referer , cp1, length);
 	}else
-		auth_referer = location_cp1;
+		strlcpy(auth_referer , location_cp1, length);
 
 	return auth_referer;
 }
@@ -435,7 +492,7 @@ send_error( int status, char* title, char* extra_header, char* text )
 }
 
 //#ifdef RTCONFIG_CLOUDSYNC
-static void
+void
 send_page( int status, char* title, char* extra_header, char* text , int fromapp){
     if(fromapp == 0){
 	send_headers( status, title, extra_header, "text/html", fromapp);
@@ -451,6 +508,14 @@ send_page( int status, char* title, char* extra_header, char* text , int fromapp
     (void) fflush( conn_fp );
 }
 //#endif
+
+void
+send_content_page( int status, char* title, char* extra_header, char* text , int fromapp){
+	(void) fprintf( conn_fp, "<HTML><HEAD>");
+	(void) fprintf( conn_fp, "%s\n", text );
+	(void) fprintf( conn_fp, "</HEAD></HTML>\n" );
+	(void) fflush( conn_fp );
+}
 
 static void
 send_headers( int status, char* title, char* extra_header, char* mime_type, int fromapp)
@@ -500,30 +565,30 @@ send_token_headers( int status, char* title, char* extra_header, char* mime_type
 		strncpy(asus_token, gen_token, sizeof(asus_token));
 	}else{
 		generate_token(asus_token, sizeof(asus_token));
-		add_asus_token(asus_token);
 	}
+	add_asus_token(asus_token);
 
-	(void) fprintf( conn_fp, "%s %d %s\r\n", PROTOCOL, status, title );
-	(void) fprintf( conn_fp, "Server: %s\r\n", SERVER_NAME );
-	if(fromapp == FROM_DUTUtil){
-		(void) fprintf( conn_fp, "AiHOMEAPILevel: %d\r\n", EXTEND_AIHOME_API_LEVEL );
-		(void) fprintf( conn_fp, "Httpd_AiHome_Ver: %d\r\n", EXTEND_HTTPD_AIHOME_VER );
-		(void) fprintf( conn_fp, "Model_Name: %s\r\n", get_productid() );
-	}else if(fromapp == FROM_ASSIA){
-		(void) fprintf( conn_fp, "ASSIA_API_Level: %d\r\n", EXTEND_ASSIA_API_LEVEL );
-	}
-	now = time( (time_t*) 0 );
-	(void) strftime( timebuf, sizeof(timebuf), RFC1123FMT, gmtime( &now ) );
-	(void) fprintf( conn_fp, "Date: %s\r\n", timebuf );
-	if ( extra_header != (char*) 0 )
-		(void) fprintf( conn_fp, "%s\r\n", extra_header );
-	if ( mime_type != (char*) 0 )
-		(void) fprintf( conn_fp, "Content-Type: %s\r\n", mime_type );
+    (void) fprintf( conn_fp, "%s %d %s\r\n", PROTOCOL, status, title );
+    (void) fprintf( conn_fp, "Server: %s\r\n", SERVER_NAME );
+    if(fromapp == FROM_DUTUtil){
+	(void) fprintf( conn_fp, "AiHOMEAPILevel: %d\r\n", EXTEND_AIHOME_API_LEVEL );
+	(void) fprintf( conn_fp, "Httpd_AiHome_Ver: %d\r\n", EXTEND_HTTPD_AIHOME_VER );
+	(void) fprintf( conn_fp, "Model_Name: %s\r\n", get_productid() );
+    }else if(fromapp == FROM_ASSIA){
+	(void) fprintf( conn_fp, "ASSIA_API_Level: %d\r\n", EXTEND_ASSIA_API_LEVEL );
+    }
+    now = time( (time_t*) 0 );
+    (void) strftime( timebuf, sizeof(timebuf), RFC1123FMT, gmtime( &now ) );
+    (void) fprintf( conn_fp, "Date: %s\r\n", timebuf );
+    if ( extra_header != (char*) 0 )
+	(void) fprintf( conn_fp, "%s\r\n", extra_header );
+    if ( mime_type != (char*) 0 )
+	(void) fprintf( conn_fp, "Content-Type: %s\r\n", mime_type );
 
 	(void) fprintf( conn_fp, "Set-Cookie: asus_token=%s; HttpOnly;\r\n",asus_token );
 
-	(void) fprintf( conn_fp, "Connection: close\r\n" );
-	(void) fprintf( conn_fp, "\r\n" );
+    (void) fprintf( conn_fp, "Connection: close\r\n" );
+    (void) fprintf( conn_fp, "\r\n" );
 }
 
 /* Simple shell-style filename matcher.  Only does ? * and **, and multiple
@@ -614,13 +679,17 @@ int check_user_agent(char* user_agent){
 				fromapp=FROM_ASSIA;
 			else if(strcmp( app_framework, "IFTTT") == 0)
 				fromapp=FROM_IFTTT;
+			else if(strcmp( app_framework, "Alexa") == 0)
+				fromapp=FROM_ALEXA;
+			else
+				fromapp=FROM_UNKNOWN;
 		}
 		if(cp1) free(cp1);
 	}
 	return fromapp;
 }
 
-#ifdef RTCONFIG_IFTTT
+#if defined(RTCONFIG_IFTTT) || defined(RTCONFIG_ALEXA)
 void add_ifttt_flag(void){
 
 	memset(user_agent, 0, sizeof(user_agent));
@@ -677,23 +746,26 @@ void do_file(char *path, FILE *stream)
 
 void set_referer_host(void)
 {
-	const int d_len = strlen(DUT_DOMAIN_NAME);
 	int port = 0;
-	int referer_from_https = 0;
+	char *lan_ipaddr = nvram_safe_get("lan_ipaddr");
+	const int d_len = strlen(DUT_DOMAIN_NAME);
+	const int ip_len = strlen(lan_ipaddr);
 
-	memset(referer_host, 0, sizeof(referer_host));
-	if (*(host_name + d_len) == ':' && (port = atoi(host_name + d_len + 1)) > 0 && port < 65536){
-		referer_from_https = 1;
-	}
-	if (((strlen(host_name) == d_len) || (*(host_name + d_len) == ':' && atoi(host_name + d_len + 1) > 0))
-	   && strncmp(DUT_DOMAIN_NAME, host_name, d_len)==0){
-		if(referer_from_https)
-			snprintf(referer_host,sizeof(referer_host),"%s:%d",nvram_safe_get("lan_ipaddr"), port);
-		else
-			snprintf(referer_host,sizeof(referer_host),"%s",nvram_safe_get("lan_ipaddr"));
-	}
+	if(!strncmp(DUT_DOMAIN_NAME, host_name, d_len) && *(host_name + d_len) == ':' && (port = atoi(host_name + d_len + 1)) > 0 && port < 65536){	//transfer https domain to ip
+		if(port == 80)
+			strlcpy(referer_host, lan_ipaddr, sizeof(referer_host));
+		else{
+			memset(referer_host, 0, sizeof(referer_host));
+			snprintf(referer_host,sizeof(referer_host),"%s:%d",lan_ipaddr, port);
+		}
+	}else if(!strcmp(DUT_DOMAIN_NAME, host_name))	//transfer http domain to ip
+		strlcpy(referer_host, lan_ipaddr, sizeof(referer_host));
+	else if(!strncmp(lan_ipaddr, host_name, ip_len) && *(host_name + ip_len) == ':' && (port = atoi(host_name + ip_len + 1)) == 80)	//filter send hostip:80
+		strlcpy(referer_host, lan_ipaddr, sizeof(referer_host));
+	else if(nvram_match("x_Setting", "0"))
+		strlcpy(referer_host, lan_ipaddr, sizeof(referer_host));
 	else
-		snprintf(referer_host,sizeof(host_name),"%s",host_name);
+		strlcpy(referer_host, host_name, sizeof(referer_host));
 }
 
 int is_firsttime(void);
@@ -710,7 +782,43 @@ char detect_timestampstr[32];
 #define APPLYROGSTR     "api.asp"
 #endif
 
-int auto_set_lang = 0; //Prevent to check language every request
+
+#ifdef RTCONFIG_LANTIQ
+int wave_handle_flag(char *url)
+{
+	int ret = 0;
+
+	if(strcmp(url, "qis/QIS_wireless.htm") == 0 ||
+		strcmp(url, "QIS_wizard.htm") == 0){
+		_dprintf("httpd_handle_request:[%s] from QIS\n", url);
+		nvram_set_int("wave_flag", WAVE_FLAG_QIS);
+	}else if(strcmp(url, "Advanced_Wireless_Content.asp") == 0){
+		_dprintf("httpd_handle_request:[%s] from wireless\n", url);
+		nvram_set_int("wave_flag", WAVE_FLAG_NORMAL);
+	}else if(strcmp(url, "Advanced_WWPS_Content.asp") == 0){
+		_dprintf("httpd_handle_request:[%s] for WPS\n", url);
+		nvram_set_int("wave_flag", WAVE_FLAG_WPS);
+	}else if(strcmp(url, "Advanced_WMode_Content.asp") == 0){
+		_dprintf("httpd_handle_request:[%s] for WDS\n", url);
+		nvram_set_int("wave_flag", WAVE_FLAG_WDS);
+	}else if(strcmp(url, "Advanced_ACL_Content.asp") == 0){
+		_dprintf("httpd_handle_request:[%s] for mac filter\n", url);
+		nvram_set_int("wave_flag", WAVE_FLAG_ACL);
+	}else if(strcmp(url, "Advanced_WAdvanced_Content.asp") == 0){
+		_dprintf("httpd_handle_request:[%s] for advanced wireless\n", url);
+		nvram_set_int("wave_flag", WAVE_FLAG_ADV);
+	}else if(strcmp(url, "Guest_network.asp") == 0){
+		_dprintf("httpd_handle_request:[%s] for guest network\n", url);
+		nvram_set_int("wave_flag", WAVE_FLAG_VAP);
+	}else if(strcmp(url, "device-map/router.asp") == 0){
+		_dprintf("httpd_handle_request:[%s] for networkmap\n", url);
+		nvram_set_int("wave_flag", WAVE_FLAG_NETWORKMAP);
+	}
+	return ret;
+}
+#endif
+
+static int auto_set_lang = 0; //Prevent to check language every request
 static void
 handle_request(void)
 {
@@ -731,6 +839,7 @@ handle_request(void)
 	int i, isDeviceDiscovery=0;
 	char id_local[32],prouduct_id[32];
 #endif
+	char inviteCode[512];
 
 	/* Initialize the request variables. */
 	authorization = boundary = cookies = referer = useragent = NULL;
@@ -825,6 +934,29 @@ handle_request(void)
 
 				auto_set_lang = 1; //Prevent to check language every request
 			}
+
+			#ifdef RTCONFIG_DSL_TCLINUX
+			if(is_firsttime()){
+				if(nvram_match("preferred_lang", "CZ") || nvram_match("preferred_lang", "DE")) {
+					int do_restart = 0;
+					if( nvram_match("dslx_annex", "4")
+						&& nvram_match("dsltmp_adslsyncsts", "down")
+					){
+						_dprintf("DSL: auto switch to annex b/j\n");
+						nvram_set("dslx_annex", "6");
+						do_restart = 1;
+					}
+					if(nvram_match("preferred_lang", "DE")
+						&& nvram_match("dslx_vdsl_profile", "0")) {
+						_dprintf("DSL: auto switch to 17a multi mode\n");
+						nvram_set("dslx_vdsl_profile", "1");
+						do_restart = 1;
+					}
+					if (do_restart)
+						notify_rc("restart_dsl_setting");
+				}
+			}
+			#endif
 		}
 #endif
 		else if ( strncasecmp( cur, "Authorization:", 14 ) == 0 )
@@ -917,7 +1049,7 @@ handle_request(void)
 			file = "find_device.asp";
 #endif
 		else
-			file = "index.asp";
+			file = INDEXPAGE;
 	}
 
 // 2007.11 James. {
@@ -939,8 +1071,10 @@ handle_request(void)
 	}
 // 2007.11 James. }
 
-	memset(current_page_name, 0, sizeof(current_page_name));
-	strcpy(current_page_name, url);
+	if( (strstr(url, ".asp") || strstr(url, ".htm")) && !strstr(url, "update_networkmapd.asp") && !strstr(url, "update_clients.asp") && !strstr(url, "update_customList.asp") ) {
+		memset(current_page_name, 0, sizeof(current_page_name));
+		snprintf(current_page_name, sizeof(current_page_name), "%s", url);
+	}
 
 	if(strncmp(url, APPLYAPPSTR, strlen(APPLYAPPSTR))==0 
 #ifdef RTCONFIG_ROG
@@ -962,25 +1096,54 @@ handle_request(void)
 
 	fromapp = check_user_agent(useragent);
 
-	//printf("httpd url: %s file: %s\n", url, file);
-	//_dprintf("httpd url: %s file: %s\n", url, file);
+#if defined(RTCONFIG_IFTTT) || defined(RTCONFIG_ALEXA)
+	ifttt_log(url, file);
+#endif
 
+#ifdef RTCONFIG_UIDEBUG
+        char sysdepPath[128];
+	snprintf(sysdepPath, sizeof(sysdepPath), "sysdep/%s/www/", nvram_safe_get("productid"));
+	strcat(sysdepPath, url);
+        if(check_if_file_exist(sysdepPath)){
+// _dprintf("[httpd] ### GET ### sysdepPath: %s\n", sysdepPath);
+		snprintf(sysdepPath, 128, "sysdep/%s/www/", nvram_safe_get("productid"));
+		strcat(sysdepPath, file);
+		file = sysdepPath;
+// _dprintf("[httpd] file: %s\n", file);
+        }
+#endif
 	mime_exception = 0;
 	do_referer = 0;
 
 	if(!fromapp) {
-		if(lock_flag == 1){
+		if(!cur_login_ip_type && (lock_flag & LOCK_LOGIN_LAN)){
 			login_timestamp_tmp = uptime();
 			login_dt = login_timestamp_tmp - last_login_timestamp;
-			if(last_login_timestamp != 0 && login_dt > 60){
+			if(last_login_timestamp != 0 && login_dt > MAX_LOGIN_BLOCK_TIME){
 				login_try = 0;
 				last_login_timestamp = 0;
-				lock_flag = 0;
+				lock_flag &= ~(LOCK_LOGIN_LAN);
 				login_error_status = 0;
 			}else{
-				if((strncmp(file, "Main_Login.asp", 14)==0 && login_error_status == 7)|| strstr(url, ".png")){
+				if((strncmp(file, "Main_Login.asp", 14)==0 && login_error_status == LOGINLOCK)|| strstr(url, ".png")){
 				}else{
-					send_login_page(fromapp, LOGINLOCK, url, NULL, login_dt);
+					send_login_page(fromapp, LOGINLOCK, url, NULL, login_dt, NOLOGINTRY);
+					return;
+				}
+			}
+		}
+		else if(cur_login_ip_type && (lock_flag & LOCK_LOGIN_WAN)){
+			login_timestamp_tmp_wan= uptime();
+			login_dt = login_timestamp_tmp_wan - last_login_timestamp_wan;
+			if(last_login_timestamp_wan!= 0 && login_dt > MAX_LOGIN_BLOCK_TIME){
+				login_try_wan= 0;
+				last_login_timestamp_wan= 0;
+				lock_flag &= ~(LOCK_LOGIN_WAN);
+				login_error_status = 0;
+			}else{
+				if((strncmp(file, "Main_Login.asp", 14)==0 && login_error_status == LOGINLOCK)|| strstr(url, ".png")){
+				}else{
+					send_login_page(fromapp, LOGINLOCK, url, NULL, login_dt, NOLOGINTRY);
 					return;
 				}
 			}
@@ -1006,16 +1169,19 @@ handle_request(void)
 				break;
 			}
 		}
+	}
+	x_Setting = nvram_get_int("x_Setting");
 
-		x_Setting = nvram_get_int("x_Setting");
-	}
-	else { // Jerry5 fix AiCloud login issue. 20120815
-		x_Setting = nvram_get_int("x_Setting");
-		//skip_auth = 0;
-	}
 	for (handler = &mime_handlers[0]; handler->pattern; handler++) {
+#ifdef RTCONFIG_HTTPS
+		if (do_ssl && !strcmp(url, "offline.htm"))
+			continue;
+#endif
 		if (match(handler->pattern, url))
 		{
+#ifdef RTCONFIG_LANTIQ
+			wave_handle_flag(url);
+#endif
 			nvram_set("httpd_handle_request", url);
 			nvram_set_int("httpd_handle_request_fromapp", fromapp);
 			if(login_state==3 && !fromapp) { // few pages can be shown even someone else login
@@ -1023,7 +1189,7 @@ handle_request(void)
 					if(strcasecmp(method, "post") == 0 && handler->input)	//response post request
 						while (cl--) (void)fgetc(conn_fp);
 
-					send_login_page(fromapp, NOLOGIN, NULL, NULL, 0);
+					send_login_page(fromapp, NOLOGIN, NULL, NULL, 0, NOLOGINTRY);
 					return;
 				}
 			}
@@ -1031,17 +1197,36 @@ handle_request(void)
 				if ((mime_exception&MIME_EXCEPTION_NOAUTH_FIRST)&&!x_Setting) {
 					//skip_auth=1;
 				}
+#ifdef RTCONFIG_WIFI_SON
+				else if(!fromapp && !nvram_match("sw_mode", "1") && (nvram_match("sw_mode", "3") && !nvram_match("cfg_master", "1")) && strcmp(nvram_safe_get("hive_ui"), "") == 0){
+					snprintf(inviteCode, sizeof(inviteCode), "<meta http-equiv=\"refresh\" content=\"0; url=message.htm\">\r\n");
+					send_page( 200, "OK", (char*) 0, inviteCode, 0);
+				}
+#endif
+#if defined(VZWAC1300)
+				else if(!fromapp){
+					snprintf(inviteCode, sizeof(inviteCode), "<script>top.location.href='/message.htm';</script>");
+					send_page( 200, "OK", (char*) 0, inviteCode, 0);
+				}
+#endif
+#ifdef RTCONFIG_AMAS
+				//RD can do firmware upgrade, if re_upgrade set to 1.
+				else if(!fromapp && nvram_match("re_mode", "1") && nvram_get_int("re_upgrade") == 0 && !check_AiMesh_whitelist(file)){
+					snprintf(inviteCode, sizeof(inviteCode), "<meta http-equiv=\"refresh\" content=\"0; url=message.htm\">\r\n");
+					send_page( 200, "OK", (char*) 0, inviteCode, 0);
+					return;
+				}
+#endif
 				else if((mime_exception&MIME_EXCEPTION_NOAUTH_ALL)) {
 				}
 				else {
 					if(do_referer&CHECK_REFERER){
 						referer_result = referer_check(referer, fromapp);
 						if(referer_result != 0){
-
 							if(strcasecmp(method, "post") == 0 && handler->input)	//response post request
 								while (cl--) (void)fgetc(conn_fp);
 
-							send_login_page(fromapp, referer_result, NULL, NULL, 0);
+							send_login_page(fromapp, referer_result, NULL, NULL, 0, NOLOGINTRY);
 							//if(!fromapp) http_logout(login_ip_tmp, cookies);
 							return;
 						}
@@ -1050,11 +1235,10 @@ handle_request(void)
 					auth_result = auth_check(auth_realm, authorization, url, file, cookies, fromapp);
 					if (auth_result != 0)
 					{
-						if(strcasecmp(method, "post") == 0 && handler->input)   //response post request
+						if(strcasecmp(method, "post") == 0 && handler->input)	//response post request
 							while (cl--) (void)fgetc(conn_fp);
 
-						send_login_page(fromapp, auth_result, NULL, NULL, 0);
-						//if(!fromapp) http_logout(login_ip_tmp, cookies);
+						send_login_page(fromapp, auth_result, url, file, auth_check_dt, add_try);
 						return;
 					}
 				}
@@ -1064,17 +1248,23 @@ handle_request(void)
 							&& !strstr(url, ".js")
 							&& !strstr(url, ".css")
 							&& !strstr(url, ".gif")
-							&& !strstr(url, ".png"))
+							&& !strstr(url, ".png")) {
+#if defined(RTCONFIG_WIRELESSREPEATER) || defined(RTCONFIG_CONCURRENTREPEATER)					 
+						if (nvram_match("x_Setting", "0") && (strstr(url, "start_apply2.htm") || strstr(url, "apscan.asp") || strstr(url, "data:image/")))
+							;//TODO
+						else
+#endif
 						http_login(login_ip_tmp, url);
+					}
 				}
 			}else{
-				if(fromapp == 0 && (do_referer&CHECK_REFERER)){
+				if(do_referer&CHECK_REFERER){
 					referer_result = check_noauth_referrer(referer, fromapp);
 					if(referer_result != 0){
 						if(strcasecmp(method, "post") == 0 && handler->input)	//response post request
 							while (cl--) (void)fgetc(conn_fp);
 
-						send_login_page(fromapp, referer_result, NULL, NULL, 0);
+						send_login_page(fromapp, referer_result, NULL, NULL, 0, NOLOGINTRY);
 						//if(!fromapp) http_logout(login_ip_tmp, cookies);
 						return;
 					}
@@ -1083,7 +1273,7 @@ handle_request(void)
 
 			if(!strcmp(file, "Logout.asp")){
 				http_logout(login_ip_tmp, cookies, fromapp);
-				send_login_page(fromapp, ISLOGOUT, NULL, NULL, 0);
+				send_login_page(fromapp, ISLOGOUT, NULL, NULL, 0, NOLOGINTRY);
 				return;
 			}
 			if (strcasecmp(method, "post") == 0 && !handler->input) {
@@ -1120,30 +1310,32 @@ handle_request(void)
 #ifdef RTCONFIG_DSL_TCLINUX
 					&& !strstr(file, "TCC.log")
 #endif
-					){
+#ifdef RTCONFIG_IPSEC
+					&& !strstr(file, "ipsec.log")
+#endif
+#if defined(RTCONFIG_IFTTT) || defined(RTCONFIG_ALEXA)
+					&& !strstr(file, "asustitle.png")
+#endif
+					&& !strstr(file,"cert_key.tar")){
 				send_error( 404, "Not Found", (char*) 0, "File not found." );
 				return;
-			} 
-			if(strncmp(url, "QIS_default.cgi", strlen(url))==0 && nvram_match("x_Setting", "0")){
-
+			}
+			if(nvram_match("x_Setting", "0") && (strcmp(url, "QIS_default.cgi")==0 || strcmp(url, "page_default.cgi")==0 || !strcmp(websGetVar(file, "x_Setting", ""), "1"))){
 				if(!fromapp) set_referer_host();
 				send_token_headers( 200, "Ok", handler->extra_header, handler->mime_type, fromapp);
 
 			}else if(strncmp(url, "login.cgi", strlen(url))!=0){
 				send_headers( 200, "Ok", handler->extra_header, handler->mime_type, fromapp);
 			}
-
 			if (strcasecmp(method, "head") != 0 && handler->output) {
 				handler->output(file, conn_fp);
 			}
-
 			break;
 		}
 	}
 
 	if (!handler->pattern){
 		if(strlen(file) > 50 && !(strstr(file, "findasus")) && !(strstr(file, "acme-challenge"))){
-			char inviteCode[512];
 			memset(cloud_file, 0, sizeof(cloud_file));
 			if(!check_xss_blacklist(file, 0))
 				strlcpy(cloud_file, file, sizeof(cloud_file));
@@ -1160,12 +1352,10 @@ handle_request(void)
 
 //2008 magic{
 void http_login_cache(usockaddr *u) {
-	struct in_addr temp_ip_addr;
-	char *temp_ip_str;
-
 	login_ip_tmp = (unsigned int)(u->sa_in.sin_addr.s_addr);
-	temp_ip_addr.s_addr = login_ip_tmp;
-	temp_ip_str = inet_ntoa(temp_ip_addr);
+	cur_login_ip_type = check_current_ip_is_lan_or_wan();
+	if(cur_login_ip_type == -1)
+		_dprintf("[%s, %d]ERROR! Can not check the remote ip!\n", __FUNCTION__, __LINE__);
 }
 
 void http_login(unsigned int ip, char *url) {
@@ -1266,11 +1456,11 @@ void http_logout(unsigned int ip, char *cookies, int fromapp_flag)
 
 int is_auth(void)
 {
-	if (http_port==SERVER_PORT ||
-	    http_port==nvram_get_int("http_lanport") ||
+	if (http_port == SERVER_PORT ||
+	    http_port == nvram_get_int("http_lanport") ||
 #ifdef RTCONFIG_HTTPS
-	    http_port==SERVER_PORT_SSL ||
-	    http_port==nvram_get_int("https_lanport") ||
+	    http_port == SERVER_PORT_SSL ||
+	    http_port == nvram_get_int("https_lanport") ||
 #endif
 	    strcmp(nvram_get_x("PrinterStatus", "usb_webhttpcheck_x"), "1") == 0)
 		return 1;
@@ -1327,6 +1517,149 @@ char *config_model_name(char *source, char *find,  char *rep){
 }
 
 #ifdef TRANSLATE_ON_FLY
+/* Whether a language support should be enabled or not.
+ * @lang:
+ * @return:
+ * 	0:	lang should not be supported.
+ *     <0:	invalid parameter.
+ *     >0:	lang can be supported.
+ */
+int check_lang_support(char *lang)
+{
+	struct tcode_lang_s *p_lang_list = tcode_lang_list;
+	char tcode[7], *odmpid;
+	int model;
+	int ret = 1;
+
+	model = get_model();
+	odmpid = nvram_safe_get("odmpid");
+
+#ifdef RTCONFIG_TCODE
+	if(!find_word(nvram_safe_get("rc_support"), "tcode") || snprintf(tcode, sizeof(tcode), "%s", nvram_safe_get("territory_code")) <= 0)
+		return 1;
+
+	for(; p_lang_list->model != 0; p_lang_list++) {
+		/* specific model */
+		if( p_lang_list->model == model &&
+			(!p_lang_list->odmpid || !strcmp(p_lang_list->odmpid, odmpid)) &&
+			(!strncmp(p_lang_list->tcode, tcode, 2) || !strcmp(p_lang_list->tcode, "GLOBAL"))){
+			if(strstr(p_lang_list->support_lang, lang))
+				ret = 1;
+			else
+				ret = 0;
+			break;
+		}
+		/* generic models */
+		else if(p_lang_list->model == MODEL_GENERIC &&
+				(!strncmp(p_lang_list->tcode, tcode, 2) || !strcmp(p_lang_list->tcode, "GLOBAL"))){
+			if(strstr(p_lang_list->support_lang, lang))
+				ret = 1;
+			else
+				ret = 0;
+			break;
+		}
+	}
+#endif
+
+	return ret;
+}
+
+int change_preferred_lang()
+{
+	struct tcode_lang_s *p_lang_list = tcode_lang_list;
+	char tcode[7], *odmpid;
+	int model;
+	int ret = 1;
+
+	model = get_model();
+	odmpid = nvram_safe_get("odmpid");
+
+	if(is_firsttime() && !auto_set_lang){
+#ifdef RTCONFIG_TCODE
+		if(!find_word(nvram_safe_get("rc_support"), "tcode") || snprintf(tcode, sizeof(tcode), "%s", nvram_safe_get("territory_code")) <= 0)
+			return 1;
+
+		for(; p_lang_list->model != 0; p_lang_list++) {
+			/* specific model */
+			if( p_lang_list->model == model &&
+				(!p_lang_list->odmpid || !strcmp(p_lang_list->odmpid, odmpid)) &&
+				(!strncmp(p_lang_list->tcode, tcode, 2) || !strcmp(p_lang_list->tcode, "GLOBAL"))){
+				if(p_lang_list->auto_change)
+					ret = 1;
+				else
+					ret = 0;
+				break;
+			}
+			/* generic models */
+			else if(p_lang_list->model == MODEL_GENERIC &&
+					(!strncmp(p_lang_list->tcode, tcode, 2) || !strcmp(p_lang_list->tcode, "GLOBAL"))){
+				if(p_lang_list->auto_change)
+					ret = 1;
+				else
+					ret = 0;
+				break;
+			}
+		}
+#endif
+	}
+	else
+		ret = 0;
+
+	return ret;
+}
+
+int get_lang_num(){
+	int num = 0;
+#ifdef RTCONFIG_TCODE
+	struct tcode_lang_s *p_lang_list = tcode_lang_list;
+	char tcode[7], *odmpid;
+	int model;
+	char *delim = " ";
+	char *lang_list, *p, *substr = NULL;
+
+	model = get_model();
+	odmpid = nvram_safe_get("odmpid");
+
+	if(!find_word(nvram_safe_get("rc_support"), "tcode") ||
+		snprintf(tcode, sizeof(tcode), "%s", nvram_safe_get("territory_code")) <= 0 ||
+		!strcmp(nvram_safe_get(ATE_FACTORY_MODE_STR()), "1"))
+		return 9999;
+
+		for(; p_lang_list->model != 0; p_lang_list++) {
+			/* specific model */
+			if( p_lang_list->model == model &&
+				(!p_lang_list->odmpid || !strcmp(p_lang_list->odmpid, odmpid)) &&
+				(!strncmp(p_lang_list->tcode, tcode, 2) || !strcmp(p_lang_list->tcode, "GLOBAL"))){
+				p = lang_list = strdup(p_lang_list->support_lang);
+				substr = strsep(&p, delim);
+				while(substr){
+					num++;
+					substr = strsep(&p, delim);
+				}
+				free(lang_list);
+				break;
+			}
+			/* generic models */
+			else if(p_lang_list->model == MODEL_GENERIC &&
+					(!strncmp(p_lang_list->tcode, tcode, 2) || !strcmp(p_lang_list->tcode, "GLOBAL"))){
+				p = lang_list = strdup(p_lang_list->support_lang);
+				substr = strsep(&p, delim);
+				while(substr){
+					num++;
+					substr = strsep(&p, delim);
+				}
+				free(lang_list);
+				break;
+			}
+		}
+#endif
+
+	return num;
+
+}
+
+
+
 #ifdef RTCONFIG_AUTODICT
 int
 load_dictionary (char *lang, pkw_t pkw)
@@ -1702,8 +2035,6 @@ void reapchild()	// 0527 add
 	wait(NULL);
 }
 
-int do_ssl = 0; 	// use Global for HTTPS upgrade judgment in web.c
-int ssl_stream_fd; 	// use Global for HTTPS stream fd in web.c
 int main(int argc, char **argv)
 {
 	usockaddr usa;
@@ -1716,9 +2047,13 @@ int main(int argc, char **argv)
 	//int do_ssl = 0;
 
 	do_ssl = 0; // default
+	char log_filename[128] = {0};
 
+#if defined(RTCONFIG_SW_HW_AUTH)
+	//if(!httpd_sw_hw_check()) return 0;
+#endif
 	// usage : httpd -s -p [port]
-	while ((c = getopt(argc, argv, "sp:i:")) != -1) {
+	while ((c = getopt(argc, argv, "sp:i:w:")) != -1) {
 		switch (c) {
 		case 's':
 #ifdef RTCONFIG_HTTPS
@@ -1731,6 +2066,13 @@ int main(int argc, char **argv)
 		case 'i':
 			http_ifname = optarg;
 			break;
+		case 'w':
+			//Generate Wi-Fi log
+			snprintf(log_filename, sizeof(log_filename), "%s", optarg);
+			FILE *fp = fopen(log_filename, "w");
+			ej_wl_status_2g(0, fp, 0, NULL);
+			fclose(fp);
+			return 0;
 		default:
 			fprintf(stderr, "ERROR: unknown option %c\n", c);
 			break;
@@ -1774,7 +2116,12 @@ int main(int argc, char **argv)
 	/* Initialize listen socket */
 	for (i = 0; i < ARRAY_SIZE(listen_fd); i++)
 		listen_fd[i] = -1;
-	if ((listen_fd[0] = initialize_listen_socket(&usa, http_ifname)) < 2) {
+#ifdef RTCONFIG_AIHOME_TUNNEL
+	if (nvram_get_int("http_enable") == 1 && http_port == SERVER_PORT){
+		//httpd listen lo 80 port for tunnel but unused ifname in https only
+	}else
+#endif
+	if ((listen_fd[0] = initialize_listen_socket(&usa, http_ifname)) < 2){
 		fprintf(stderr, "can't bind to %s address\n", http_ifname ? : "any");
 		exit(errno);
 	}
@@ -2008,4 +2355,40 @@ void start_ssl(void)
 	}
 }
 #endif
+
+//return value: 0: LAN,  1: WAN,  -1: ERROR
+int _check_ip_is_lan_or_wan(const char *target_ip, const char *lan_ip, const char *submask)
+{
+	char tmp1[20], tmp2[20];
+
+	if(!target_ip || !lan_ip || !submask)
+		return -1;
+
+	//Convert target ip and lan ip.
+	//ex. target ip is 168.95.10.10, lan ip is 192.168.1.1, subnet mask is 255.255.255.0. 
+	//convert them as 168.95.10.0 and 192.168.1.0. Them compare these 2 values.
+	//If they are different, the target ip would be WAN.
+	if(get_network_addr_by_ip_prefix(target_ip, submask, tmp1, sizeof(tmp1)) == -1)
+		return -1;
+
+	if(get_network_addr_by_ip_prefix(lan_ip, submask, tmp2, sizeof(tmp2)) == -1)
+		return -1;
+
+	return !strcmp(tmp1, tmp2)? 0: 1;
+}
+
+//return value: 0: LAN,  1: WAN,  -1: ERROR
+int check_current_ip_is_lan_or_wan()
+{
+	char *target_ip;
+	struct in_addr temp_ip_addr;
+
+	if(!login_ip_tmp)
+		return -1;
+
+	temp_ip_addr.s_addr = login_ip_tmp;
+	target_ip = inet_ntoa(temp_ip_addr);
+
+	return _check_ip_is_lan_or_wan(target_ip, nvram_safe_get("lan_ipaddr"), nvram_safe_get("lan_netmask"));
+}
 

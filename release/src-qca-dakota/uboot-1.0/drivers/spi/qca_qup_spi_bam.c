@@ -305,6 +305,8 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 		return NULL;
 	}
 
+	memset(ds, 0, sizeof(struct ipq_spi_slave));
+
 	/*
 	 * QCA BLSP supports SPI Flash
 	 * on different BLSP0 and BLSP1

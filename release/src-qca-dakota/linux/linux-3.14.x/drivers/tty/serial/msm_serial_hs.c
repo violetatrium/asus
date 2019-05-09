@@ -290,7 +290,7 @@ static struct of_device_id msm_hs_match_table[] = {
 /* scm call to pass CRCI mux configuration for GSBI */
 static void adm_crci_mux_cfg(uint16_t tcsr_adm_mux_sel_reg, uint32_t tcsr_adm_mux_sel_reg_mask, uint16_t tcsr_adm_mux_sel_reg_value)
 {
-	uint32_t *ret_status = kzalloc(sizeof(uint32_t), GFP_KERNEL);
+	uint32_t *ret_status;
 	int ret;
 
 	struct tcsr {
@@ -299,6 +299,13 @@ static void adm_crci_mux_cfg(uint16_t tcsr_adm_mux_sel_reg, uint32_t tcsr_adm_mu
 		uint16_t tcsr_adm_mux_sel_reg;
 		uint16_t tcsr_adm_mux_sel_reg_value;
 	} tcsr_cmd;
+
+	ret_status = kzalloc(sizeof(uint32_t), GFP_KERNEL);
+	if (!ret_status) {
+		pr_err("unable to allocate memory for CRCI mux configuration"
+						 "status\n");
+		return;
+	}
 
 	tcsr_cmd.tcsr_adm_mux_sel_reg = tcsr_adm_mux_sel_reg;
 	tcsr_cmd.tcsr_adm_mux_sel_reg_mask = tcsr_adm_mux_sel_reg_mask;

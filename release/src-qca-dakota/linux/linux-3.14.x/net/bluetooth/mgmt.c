@@ -657,6 +657,31 @@ static u8 create_adv_data(struct hci_dev *hdev, u8 *ptr)
 		ad_len += 3;
 		ptr += 3;
 	}
+#if defined(CONFIG_MAPAC2200) || defined(CONFIG_MAPAC1300) || defined(CONFIG_VZWAC1300)
+	// from base UUID 0x0000000000001000800000805F9B34FB
+	ptr[0] = 17;
+	ptr[1] = EIR_UUID128_ALL;
+	ptr[2] = 0xFB;
+	ptr[3] = 0x34;
+	ptr[4] = 0x9B;
+	ptr[5] = 0x5F;
+	ptr[6] = 0x80;
+	ptr[7] = 0x00;
+	ptr[8] = 0x00;
+	ptr[9] = 0x80;
+	ptr[10] = 0x00;
+	ptr[11] = 0x10;
+	ptr[12] = 0x00;
+	ptr[13] = 0x00;
+	ptr[14] = 0x00; // Lyra use 0x00, Lyra trio use 0x01
+	ptr[15] = 0xAB;
+	ptr[16] = 0x00;
+	ptr[17] = 0x00;
+	ad_len += 18;
+	ptr += 18;
+#else
+#error "Defined your own UUID when usging BLE!!"
+#endif
 
 	return ad_len;
 }

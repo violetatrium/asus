@@ -765,9 +765,12 @@ static int lp5523_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, led);
 
+#if defined(CONFIG_MAPAC1300) || defined(CONFIG_MAPAC2200) || defined(CONFIG_VZWAC1300)
+#else
 	ret = lp55xx_init_device(chip);
 	if (ret)
 		goto err_init;
+#endif
 
 	dev_info(&client->dev, "%s Programmable led chip found\n", id->name);
 

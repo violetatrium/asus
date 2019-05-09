@@ -56,6 +56,7 @@
 #define CONFIG_SYS_CACHELINE_SIZE	64
 #define CONFIG_SKIP_LOWLEVEL_INIT
 #define CONFIG_SYS_HZ			1000
+#define CONFIG_SYS_VSNPRINTF
 
 #define CONFIG_IPQ40XX_USB
 #ifdef CONFIG_IPQ40XX_USB
@@ -103,6 +104,19 @@
 #define CONFIG_OF_LIBFDT		1
 #define CONFIG_OF_BOARD_SETUP		1
 
+/*
+ * IPQ_TFTP_MAX_ADDR: Starting address of UBoot load/Execution region.
+ * TFTP file can be written upto IPQ_TFTP_MAX_ADDR.
+ */
+#define IPQ_TFTP_MAX_ADDR		0x87000000
+
+/*
+ * CONFIG_TZ_END_ADDR: Ending address of Trust Zone.
+ * TFTP file can also be written from CONFIG_TZ_END_ADDR
+ * to CONFIG_SYS_SDRAM_END.
+ */
+#define CONFIG_TZ_END_ADDR		0x88000000
+#define CONFIG_SYS_SDRAM_END		(CONFIG_SYS_SDRAM_BASE + gd->ram_size)
 #define CONFIG_IPQ40XX_I2C
 #ifdef CONFIG_IPQ40XX_I2C
 #define CONFIG_CMD_I2C
@@ -181,7 +195,7 @@ typedef struct {
 #if !defined(CONFIG_ASUS_PRODUCT)
 #define CONFIG_ENV_SIZE_MAX		(256 << 10) /* 256 KB */
 #define CONFIG_ENV_SIZE			board_env_range
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE_MAX + (512 << 10))
+#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE_MAX + (2048 << 10))
 #endif
 
 #define CONFIG_CMD_MEMORY

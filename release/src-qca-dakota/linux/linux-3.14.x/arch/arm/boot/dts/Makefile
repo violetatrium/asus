@@ -252,10 +252,12 @@ dtb-$(CONFIG_ARCH_QCOM) += \
 	qcom-ipq40xx-r3pc-wifi.dtb \
 	qcom-ipq40xx-ap.dk01.1-c1.dtb \
 	qcom-ipq40xx-ap.dk01.1-c2.dtb \
+	qcom-ipq40xx-ap.dk01.1-c3.dtb \
 	qcom-ipq40xx-ap.dk04.1-c1.dtb \
 	qcom-ipq40xx-ap.dk06.1-c1.dtb \
 	qcom-ipq40xx-ap.dk07.1-c1.dtb \
 	qcom-ipq40xx-ap.dk07.1-c2.dtb \
+	qcom-ipq40xx-ap.dk07.1-c3.dtb \
 	qcom-ipq40xx-ap.dk04.1-c2.dtb \
 	qcom-ipq40xx-ap.dk04.1-c3.dtb \
 	qcom-ipq40xx-ap.dk04.1-c4.dtb \
@@ -266,9 +268,7 @@ dtb-$(CONFIG_ARCH_QCOM) += \
 	qcom-ipq8064-ap145.dtb \
 	qcom-ipq8064-ap145_1xx.dtb \
 	qcom-ipq8064-v2.0-ap145_1xx.dtb \
-	qcom-ipq8064-v3.0-ap145_1xx.dtb \
 	qcom-ipq8064-v2.0-ap145.dtb \
-	qcom-ipq8064-v3.0-ap145.dtb \
 	qcom-ipq8064-ap161.dtb \
 	qcom-ipq8064-v2.0-ap161.dtb \
 	qcom-ipq8064-v3.0-ap161.dtb \
@@ -283,7 +283,11 @@ dtb-$(CONFIG_ARCH_QCOM) += \
 	qcom-ipq8064-v3.0-ak01.dtb \
 	qcom-ipq40xx-rt-ac58u.dtb \
 	qcom-ipq40xx-4g-ac53u.dtb \
-	qcom-ipq40xx-rt-ac82u.dtb
+	qcom-ipq40xx-rt-ac82u.dtb \
+	qcom-ipq40xx-map-ac1300.dtb \
+	qcom-ipq40xx-vzw-ac1300.dtb \
+	qcom-ipq40xx-map-ac2200.dtb \
+	qcom-ipq40xx-map-ac3000.dtb
 dtb-$(CONFIG_ARCH_U8500) += ste-snowball.dtb \
 	ste-hrefprev60-stuib.dtb \
 	ste-hrefprev60-tvk.dtb \

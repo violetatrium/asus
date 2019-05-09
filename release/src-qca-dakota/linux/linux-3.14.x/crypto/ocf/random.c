@@ -196,10 +196,10 @@ random_proc(void *arg)
 	sigemptyset(&current->blocked);
 	recalc_sigpending(current);
 	spin_unlock_irq(&current->sigmask_lock);
-	sprintf(current->comm, "ocf-random");
+	scnprintf(current->comm, sizeof(current->comm), "ocf-random");
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
 	recalc_sigpending();
-	sprintf(current->comm, "ocf-random");
+	scnprintf(current->comm, sizeof(current->comm), "ocf-random");
 #else
 	daemonize("ocf-random");
 #endif

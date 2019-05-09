@@ -1,7 +1,7 @@
 /*
  * aq_phy.c: AQ105 Phy driver
 
- * Copyright (c) 2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015, 2017 The Linux Foundation. All rights reserved.
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
  * copyright notice and this permission notice appear in all copies.
@@ -31,6 +31,8 @@
 #include <linux/of_platform.h>
 #include <linux/of_address.h>
 #include <linux/reset.h>
+
+#define AQ_PHY_MAX_REG_SIZE 10
 
 static struct of_device_id dt_aq_phy[] = {
 	{ .compatible =  "qcom,aq-phy" },
@@ -84,6 +86,24 @@ static bool aq_phy_check_valid_reg(unsigned int reg_addr)
 	}
 
 	return ret;
+}
+
+/* Copy a string and return number of char copied */
+static int aq_phy_copy_str(char *src, char *dest, int size)
+{
+	int index = 0;
+
+	if ((size <= 0) || !src || !dest)
+		return -1;
+
+	while (*src != ' ' && *src != '\0' && *src != '\n' && index < (size - 1)) {
+		dest[index] = *src;
+		src++;
+		index++;
+	}
+
+	dest[index] = '\0';
+	return index;
 }
 
 /* Read a statistics register address */
@@ -265,6 +285,8 @@ static ssize_t aq_phy_write_reg_set(struct file *fp, const char __user *ubuf,
 {
 	struct aq_priv *priv = (struct aq_priv *)fp->private_data;
 	char lbuf[32];
+	char first[AQ_PHY_MAX_REG_SIZE];
+	char second[AQ_PHY_MAX_REG_SIZE];
 	size_t lbuf_size;
 	char *curr_ptr = lbuf;
 	unsigned long reg_addr = 0;
@@ -272,6 +294,7 @@ static ssize_t aq_phy_write_reg_set(struct file *fp, const char __user *ubuf,
 	uint32_t check_16bit_boundary = 0xffff0000;
 	uint32_t byte_cnt = 0;
 	bool is_writeable = false;
+	int ret;
 
 	if (!priv)
 		return -EFAULT;
@@ -286,28 +309,34 @@ static ssize_t aq_phy_write_reg_set(struct file *fp, const char __user *ubuf,
 		return -EFAULT;
 	}
 
-	lbuf[lbuf_size] = 0;
-
 	while (*curr_ptr == ' ') {
 		curr_ptr++;
 		byte_cnt++;
 	}
 
+	ret = aq_phy_copy_str(curr_ptr, first, AQ_PHY_MAX_REG_SIZE);
+	if (ret <= 0)
+		return -EINVAL;
+
+	if (kstrtoul(first, 16, &reg_addr) < 0)
+		return -EINVAL;
+
+	byte_cnt += ret;
 	if (byte_cnt >= (lbuf_size - 1))
 		return -EINVAL;
 
-	kstrtoul(curr_ptr, 16, &reg_addr);
-
-	while (*curr_ptr == ' ')
+	curr_ptr += ret;
+	while (*curr_ptr == ' ') {
 		curr_ptr++;
-
-	if (byte_cnt >= (lbuf_size - 1))
-		return -EINVAL;
-
-	if (kstrtoul(curr_ptr, 16, &reg_value)) {
-		dev_dbg(priv->dev, "%s: Invalid reg value\n", __func__);
-		return -EINVAL;
+		byte_cnt++;
 	}
+
+	ret = aq_phy_copy_str(curr_ptr, second, AQ_PHY_MAX_REG_SIZE);
+	if (ret <= 0)
+		return -EINVAL;
+
+	if (kstrtoul(second, 16, &reg_value) < 0)
+		return -EINVAL;
 
 	 /* Check for 16BIT register value boundary,
 	  * if it cross 16 Bit return error
@@ -324,9 +353,8 @@ static ssize_t aq_phy_write_reg_set(struct file *fp, const char __user *ubuf,
 		dev_dbg(priv->dev, "%s: Reg val 0x%lx, Data 0x%lx\n",
 						__func__, reg_addr, reg_value);
 		phy_write(priv->phydev, reg_addr, reg_value);
-	} else {
+	} else
 		return -EINVAL;
-	}
 
 	return lbuf_size;
 }

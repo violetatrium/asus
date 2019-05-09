@@ -11,6 +11,8 @@ config ARCH_QCOM
 	select PCI_DOMAINS if PCI
 	select QCOM_SCM if SMP
 	select HAVE_IRQ_TIME_ACCOUNTING
+	select ARM_HAS_SG_CHAIN
+	select HAVE_CC_STACKPROTECTOR
 	help
 	  Support for Qualcomm's devicetree based systems.
 

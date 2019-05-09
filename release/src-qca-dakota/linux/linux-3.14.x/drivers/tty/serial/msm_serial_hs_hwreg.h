@@ -227,6 +227,7 @@ enum msm_hs_regs {
 
 #define UARTDM_IPR_STALE_TIMEOUT_MSB_BMSK 0xffffff80
 #define UARTDM_IPR_STALE_LSB_BMSK 0x1f
+#define UARTDM_CR_CMD_RESET_RXBREAK_START ((1 << 11) | (2 << 4))
 
 /* These can be used for both ISR and IMR register */
 #define UARTDM_ISR_TX_READY_BMSK	BIT(7)
@@ -234,7 +235,7 @@ enum msm_hs_regs {
 #define UARTDM_ISR_DELTA_CTS_BMSK	BIT(5)
 #define UARTDM_ISR_RXLEV_BMSK		BIT(4)
 #define UARTDM_ISR_RXSTALE_BMSK		BIT(3)
-#define UARTDM_ISR_RXBREAK_BMSK		BIT(2)
+#define UARTDM_ISR_RXBREAK_BMSK		BIT(10)
 #define UARTDM_ISR_RXHUNT_BMSK		BIT(1)
 #define UARTDM_ISR_TXLEV_BMSK		BIT(0)
 

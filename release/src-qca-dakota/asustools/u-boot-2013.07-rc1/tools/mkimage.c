@@ -153,6 +153,11 @@ main (int argc, char **argv)
 	char *ptr;
 	int retval = 0;
 	struct image_type_params *tparams = NULL;
+#ifdef TRX_NEW
+        char *sn = NULL, *en = NULL;
+        char tmp[10];
+#endif
+
 
 	/* Init Freescale PBL Boot image generation/list support */
 	init_pbl_image_type();
@@ -296,9 +301,22 @@ main (int argc, char **argv)
 				if ((argc-=10) < 0)
 					usage ();
 				sscanf(argv[1], "%d.%d", &params.tail_pre.kernel.major, &params.tail_pre.kernel.minor);
-				sscanf(argv[2], "%d.%d", &params.tail_pre.fs.major, &params.tail_pre.fs.minor);   
-				for(i=0; i<(MAX_VER*2); i++)
-					sscanf(argv[i+3], "%d.%d", &params.tail_pre.hw[i].major, &params.tail_pre.hw[i].minor);
+
+                                sscanf(argv[2], "%d.%d", &params.tail_pre.fs.major, &params.tail_pre.fs.minor);
+#ifdef TRX_NEW
+                                sscanf(argv[3], "%d", &sn);
+                                sscanf(argv[4], "%d-%s", &en, tmp);
+                                params.tail_pre.sn = (uint16_t)sn;
+                                params.tail_pre.en = (uint16_t)en;
+ 				//printf("### sn=0x%x ,en=0x%x\n",sn,en);
+                                for(i=0; i<3; i++) {
+                                        sscanf(argv[i+5], "%d.%d", &params.tail_pre.hw[i].major, &params.tail_pre.hw[i].minor);
+                                }
+#else
+                                for(i=0; i<(MAX_VER*2); i++)
+                                        sscanf(argv[i+3], "%d.%d", &params.tail_pre.hw[i].major, &params.tail_pre.hw[i].minor);
+#endif
+
 				argv+=10;
 				params.vargv=1;
 				}

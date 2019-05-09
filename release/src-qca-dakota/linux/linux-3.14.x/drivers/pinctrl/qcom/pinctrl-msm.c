@@ -161,12 +161,6 @@ static int msm_pinmux_enable(struct pinctrl_dev *pctldev,
 	val = readl(pctrl->regs + g->ctl_reg);
 	val &= ~(0x7 << g->mux_bit);
 	val |= i << g->mux_bit;
-
-	if (function == g->extra_func) {
-		val &= ~(g->extra_mask);
-		val |= g->extra_val;
-	}
-
 	writel(val, pctrl->regs + g->ctl_reg);
 
 	spin_unlock_irqrestore(&pctrl->lock, flags);
@@ -218,8 +212,10 @@ static int msm_config_reg(struct msm_pinctrl *pctrl,
 		*mask = 3;
 		break;
 	case PIN_CONFIG_DRIVE_STRENGTH:
+	case PIN_CONFIG_DRIVE_CAP:
+	case PIN_CONFIG_DRIVE_TYPE:
 		*bit = g->drv_bit;
-		*mask = 7;
+		*mask = 0x7;
 		break;
 	case PIN_CONFIG_OUTPUT:
 		*bit = g->oe_bit;
@@ -228,6 +224,14 @@ static int msm_config_reg(struct msm_pinctrl *pctrl,
 	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
 		*bit = g->od_bit;
 		*mask = 1;
+		break;
+	case PIN_CONFIG_VM:
+		*bit = g->vm_bit;
+		*mask = 1;
+		break;
+	case PIN_CONFIG_PULL_RES:
+		*bit = g->pull_res;
+		*mask = 3;
 		break;
 	default:
 		dev_err(pctrl->dev, "Invalid config param %04x\n", param);
@@ -251,11 +255,6 @@ static int msm_config_set(struct pinctrl_dev *pctldev, unsigned int pin,
 	dev_err(pctldev->dev, "pin_config_set op not supported\n");
 	return -ENOTSUPP;
 }
-
-#define MSM_NO_PULL	0
-#define MSM_PULL_DOWN	1
-#define MSM_KEEPER	2
-#define MSM_PULL_UP	3
 
 static unsigned msm_regval_to_drive(u32 val)
 {
@@ -287,19 +286,22 @@ static int msm_config_group_get(struct pinctrl_dev *pctldev,
 	/* Convert register value to pinconf value */
 	switch (param) {
 	case PIN_CONFIG_BIAS_DISABLE:
-		arg = arg == MSM_NO_PULL;
+		arg = arg == pctrl->soc->gpio_pull->no_pull;
 		break;
 	case PIN_CONFIG_BIAS_PULL_DOWN:
-		arg = arg == MSM_PULL_DOWN;
+		arg = arg == pctrl->soc->gpio_pull->pull_down;
 		break;
 	case PIN_CONFIG_BIAS_BUS_HOLD:
-		arg = arg == MSM_KEEPER;
+		arg = arg == pctrl->soc->gpio_pull->keeper;
 		break;
 	case PIN_CONFIG_BIAS_PULL_UP:
-		arg = arg == MSM_PULL_UP;
+		arg = arg == pctrl->soc->gpio_pull->pull_up;
 		break;
 	case PIN_CONFIG_DRIVE_STRENGTH:
 		arg = msm_regval_to_drive(arg);
+		break;
+	case PIN_CONFIG_DRIVE_TYPE:
+	case PIN_CONFIG_DRIVE_CAP:
 		break;
 	case PIN_CONFIG_OUTPUT:
 		/* Pin is not output */
@@ -310,7 +312,18 @@ static int msm_config_group_get(struct pinctrl_dev *pctldev,
 		arg = !!(val & BIT(g->in_bit));
 		break;
 	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
+	case PIN_CONFIG_VM:
 		arg = arg == 1;
+		break;
+	case PIN_CONFIG_PULL_RES:
+		if (arg == RES_10_KOHM)
+			arg = 10;
+		else if (arg == RES_1_5_KOHM)
+			arg = 1.5;
+		else if (arg == RES_35_KOHM)
+			arg = 35;
+		else
+			arg = 20;
 		break;
 	default:
 		dev_err(pctrl->dev, "Unsupported config parameter: %x\n",
@@ -352,16 +365,16 @@ static int msm_config_group_set(struct pinctrl_dev *pctldev,
 		/* Convert pinconf values to register values */
 		switch (param) {
 		case PIN_CONFIG_BIAS_DISABLE:
-			arg = MSM_NO_PULL;
+			arg = pctrl->soc->gpio_pull->no_pull;
 			break;
 		case PIN_CONFIG_BIAS_PULL_DOWN:
-			arg = MSM_PULL_DOWN;
+			arg = pctrl->soc->gpio_pull->pull_down;
 			break;
 		case PIN_CONFIG_BIAS_BUS_HOLD:
-			arg = MSM_KEEPER;
+			arg = pctrl->soc->gpio_pull->keeper;
 			break;
 		case PIN_CONFIG_BIAS_PULL_UP:
-			arg = MSM_PULL_UP;
+			arg = pctrl->soc->gpio_pull->pull_up;
 			break;
 		case PIN_CONFIG_DRIVE_STRENGTH:
 			/* Check for invalid values */
@@ -369,6 +382,11 @@ static int msm_config_group_set(struct pinctrl_dev *pctldev,
 				arg = -1;
 			else
 				arg = (arg / 2) - 1;
+			break;
+		case PIN_CONFIG_DRIVE_TYPE:
+		case PIN_CONFIG_DRIVE_CAP:
+		case PIN_CONFIG_PULL_RES:
+		case PIN_CONFIG_VM:
 			break;
 		case PIN_CONFIG_OUTPUT:
 			/* set output value */

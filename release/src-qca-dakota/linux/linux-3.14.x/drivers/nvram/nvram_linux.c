@@ -22,9 +22,12 @@
 #if defined(CONFIG_RTAC58U) || defined(CONFIG_4GAC53U)
 #define RESERVED_BLOCK_SIZE	0
 #define SPI_NAND
-#elif defined(CONFIG_RTAC82U)
+#elif defined(CONFIG_RTAC82U) || defined(CONFIG_MAPAC2200) || defined(CONFIG_MAPAC3000)
 #define RESERVED_BLOCK_SIZE	0
 #undef SPI_NAND
+#elif defined(CONFIG_MAPAC1300) || defined(CONFIG_VZWAC1300)
+#define RESERVED_BLOCK_SIZE	0
+#define SPI_NAND
 #else
 #error "Define nvram by model!!!"
 /*
@@ -590,7 +593,6 @@ hndcrc8(
 	return crc;
 }
 
-extern char mid_str[];
 #define NVRAM_DRIVER_VERSION	"0.06"
 static int 
 nvram_proc_show(struct seq_file *m, void *v)
@@ -625,8 +627,6 @@ nvram_proc_show(struct seq_file *m, void *v)
 			g_wlnv.avg_len, g_wlnv.may_erase_nexttime);
 	seq_printf(m, "rsv_blk_size : 0x%x\n", rsv_blk_size);
 #endif	/* WL_NVRAM */
-	if (mid_str[0])
-	seq_printf(m, "MID : %s\n", mid_str);
 
 	return 0;
 }
@@ -1278,7 +1278,7 @@ nvram_xfr(const char *buf)
 	ssize_t ret=0;
 
 	//printk("nvram xfr 1: %s\n", buf);	// tmp test
-	if (copy_from_user(name, buf, strlen(buf)+1)) {
+	if (copy_from_user(name, buf, sizeof(tmpbuf))) {
 		ret = -EFAULT;
 		goto done;
 	}
@@ -1287,7 +1287,7 @@ nvram_xfr(const char *buf)
 	{
 		asusnls_u2c(tmpbuf);
 	}
-	else if (strncmp(buf, NLS_NVRAM_C2U, strlen(NLS_NVRAM_C2U))==0)
+	else if (strncmp(tmpbuf, NLS_NVRAM_C2U, strlen(NLS_NVRAM_C2U))==0)
 	{
 		asusnls_c2u(tmpbuf);
 	}
@@ -1297,7 +1297,7 @@ nvram_xfr(const char *buf)
 		//printk("nvram xfr 2: %s\n", tmpbuf);	// tmp test
 	}
 	
-	if (copy_to_user((char*)buf, tmpbuf, strlen(tmpbuf)+1))
+	if (copy_to_user((char*)buf, tmpbuf, sizeof(tmpbuf)))
 	{
 		ret = -EFAULT;
 		goto done;

@@ -216,9 +216,6 @@ static const unsigned int sdc3_data_pins[] = { 71 };
 		.intr_polarity_bit = 1,			\
 		.intr_detection_bit = 2,		\
 		.intr_detection_width = 1,		\
-		.extra_val = 0,				\
-		.extra_mask = 0,			\
-		.extra_func = IPQ_MUX_NA,		\
 	}
 
 #define SDC_PINGROUP(pg_name, ctl, pull, drv)		\
@@ -245,9 +242,6 @@ static const unsigned int sdc3_data_pins[] = { 71 };
 		.intr_polarity_bit = -1,                \
 		.intr_detection_bit = -1,               \
 		.intr_detection_width = -1,             \
-		.extra_val = 0,				\
-		.extra_mask = 0,			\
-		.extra_func = IPQ_MUX_NA,		\
 	}
 
 enum ipq8064_functions {
@@ -648,6 +642,7 @@ static const struct msm_pinctrl_soc_data ipq8064_pinctrl = {
 	.groups = ipq8064_groups,
 	.ngroups = ARRAY_SIZE(ipq8064_groups),
 	.ngpios = NUM_GPIO_PINGROUPS,
+	.gpio_pull = &msm_gpio_pull,
 };
 
 static int ipq8064_pinctrl_probe(struct platform_device *pdev)

@@ -197,7 +197,6 @@ int wanlink_hook_dsl(int eid, webs_t wp, int argc, char_t **argv){
 	websWrite(wp, "function wanlink_xipaddr() { return '%s';}\n", xip);
 	websWrite(wp, "function wanlink_xnetmask() { return '%s';}\n", xnetmask);
 	websWrite(wp, "function wanlink_xgateway() { return '%s';}\n", xgateway);
-	websWrite(wp, "function wanlink_xdns() { return '%s';}\n", nvram_safe_get(strcat_r(prefix, "xdns", tmp)));
 	websWrite(wp, "function wanlink_xdns() { return '%s';}\n", xdns);
 	websWrite(wp, "function wanlink_xlease() { return %d;}\n", xlease);
 	websWrite(wp, "function wanlink_xexpires() { return %d;}\n", xexpires);

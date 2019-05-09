@@ -17,6 +17,11 @@ config REGMAP_SPI
 	depends on SPI_MASTER
 	tristate "Regmap SPI"
 
+config REGMAP_SWR
+	select REGMAP
+	depends on SOUNDWIRE
+	tristate "Regmap Soundwire"
+
 config REGMAP_SPMI
 	select REGMAP
 	tristate

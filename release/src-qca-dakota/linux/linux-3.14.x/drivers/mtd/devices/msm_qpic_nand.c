@@ -543,9 +543,9 @@ static int msm_nand_flash_onfi_probe(struct msm_nand_info *info)
 
 	ret = msm_nand_version_check(info, &nandc_version);
 	if (!ret && !(nandc_version.nand_major == 1 &&
-			nandc_version.nand_minor == 1 &&
+			nandc_version.nand_minor == 4 &&
 			nandc_version.qpic_major == 1 &&
-			nandc_version.qpic_minor == 1)) {
+			nandc_version.qpic_minor == 4)) {
 		ret = -EPERM;
 		goto out;
 	}
@@ -680,8 +680,9 @@ static int msm_nand_flash_onfi_probe(struct msm_nand_info *info)
 			ret, out, &iovec_temp);
 
 	ret = msm_nand_put_device(chip->dev);
+	mutex_unlock(&info->lock);
 	if (ret)
-		goto unlock_mutex;
+		goto free_dma;
 
 	/* Check for flash status errors */
 	if (dma_buffer->flash_status & (FS_OP_ERR | FS_MPU_ERR)) {
@@ -735,7 +736,7 @@ static int msm_nand_flash_onfi_probe(struct msm_nand_info *info)
 	 */
 	if (!strncmp(onfi_param_page_ptr->device_model, "MT29F4G08ABC", 12))
 		flash->widebus  = 0;
-	goto unlock_mutex;
+	goto free_dma;
 put_dev:
 	msm_nand_put_device(chip->dev);
 unlock_mutex:

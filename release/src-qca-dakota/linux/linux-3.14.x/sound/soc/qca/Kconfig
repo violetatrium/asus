@@ -24,6 +24,8 @@ config SND_QCA_SOC
 config SND_QCA_SOC_IPQ40XX
 	tristate "SoC Audio support for IPQ40xx (Dakota) based platforms"
 	depends on ARCH_QCOM && SND_QCA_SOC
+	select SND_SOC_WCD934X
+	select SND_SOC_WSA881X
 	select SND_IPQ40XX_SOC_PCM_I2S
 	select SND_IPQ40XX_SOC_PCM_TDM
 	select SND_IPQ40XX_SOC_PCM_SPDIF

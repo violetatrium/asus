@@ -710,6 +710,7 @@ struct dwc3 {
 	unsigned		enable_usb2susphy_quirk:1;
 	unsigned		enable_usb2_host_discon_quirk:1;
 	unsigned		dis_u3_susphy_quirk:1;
+	unsigned		usb3_dev_reset_quirk:1;
 
 	enum dwc3_ep0_next	ep0_next_event;
 	enum dwc3_ep0_state	ep0state;

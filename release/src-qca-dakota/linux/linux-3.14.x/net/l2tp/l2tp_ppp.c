@@ -114,6 +114,7 @@
 #include <net/udp.h>
 #include <net/xfrm.h>
 #include <net/inet_common.h>
+#include <linux/if_pppox.h>
 
 #include <asm/byteorder.h>
 #include <linux/atomic.h>
@@ -148,11 +149,13 @@ struct pppol2tp_session {
 
 static int pppol2tp_xmit(struct ppp_channel *chan, struct sk_buff *skb);
 static int pppol2tp_get_channel_protocol(struct ppp_channel *);
+static int pppol2tp_get_channel_protocol_ver(struct ppp_channel *);
 static void pppol2tp_hold_chan(struct ppp_channel *);
 static void pppol2tp_release_chan(struct ppp_channel *);
 static const struct pppol2tp_channel_ops pppol2tp_chan_ops = {
 	.ops.start_xmit =  pppol2tp_xmit,
 	.ops.get_channel_protocol = pppol2tp_get_channel_protocol,
+	.ops.get_channel_protocol_ver = pppol2tp_get_channel_protocol_ver,
 	.ops.hold = pppol2tp_hold_chan,
 	.ops.release = pppol2tp_release_chan,
 };
@@ -419,6 +422,47 @@ static int pppol2tp_get_channel_protocol(struct ppp_channel *chan)
 	return PX_PROTO_OL2TP;
 }
 
+/* pppol2tp_get_channel_protocol_ver()
+ * Return the protocol version of the L2TP over PPP protocol
+ */
+static int pppol2tp_get_channel_protocol_ver(struct ppp_channel *chan)
+{
+	struct sock *sk;
+	struct l2tp_session *session;
+	struct l2tp_tunnel *tunnel;
+	struct pppol2tp_session *ps;
+	int version = 0;
+
+	if (chan && chan->private)
+		sk = (struct sock *)chan->private;
+	else
+		return -1;
+
+	/* Get session and tunnel contexts from the socket */
+	session = pppol2tp_sock_to_session(sk);
+	if (!session)
+		return -1;
+
+	ps = l2tp_session_priv(session);
+	if (!ps->tunnel_sock) {
+		sock_put(sk);
+		return -1;
+	}
+
+	tunnel = l2tp_sock_to_tunnel(ps->tunnel_sock);
+	if (!tunnel) {
+		sock_put(sk);
+		return -1;
+	}
+
+	version = tunnel->version;
+
+	sock_put(ps->tunnel_sock);
+	sock_put(sk);
+
+	return version;
+}
+
 /*
  * pppol2tp_get_addressing()
  */
@@ -534,7 +578,8 @@ static int pppol2tp_xmit(struct ppp_channel *chan, struct sk_buff *skb)
 	skb->data[0] = ppph[0];
 	skb->data[1] = ppph[1];
 	/* set incoming interface as the ppp interface */
-	if (skb->skb_iif)
+	if ((skb->protocol == htons(ETH_P_IP)) ||
+	    (skb->protocol == htons(ETH_P_IPV6)))
 		skb->skb_iif = ppp_dev_index(chan);
 
 	local_bh_disable();

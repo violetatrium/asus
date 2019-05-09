@@ -107,6 +107,9 @@
 #if defined(ASUS_PRODUCT)
 #include <gpio.h>
 #include <cmd_tftpServer.h>
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+#include <leds_lp5523.h>
+#endif
 #endif
 
 extern void TftpSend(void);
@@ -515,7 +518,8 @@ restart:
 
 
 #ifdef ASUS_PRODUCT
-                       /*ASUS*/
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+#else
                         if (i%2 == 0) {
 				if (ubi_damaged == 1)
 					all_leds_off();
@@ -530,6 +534,7 @@ restart:
                         ++i;
                         if (i == 0xffffff)
 				i = 0;
+#endif
 #endif
 
 #if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
@@ -597,7 +602,11 @@ done:
 
 #if defined(ASUS_PRODUCT)
 leave:
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+	lp5523_leds_proc(LP55XX_INIT_LEDS);
+#else
 	power_led_on();
+#endif
 #endif
 	return ret;
 }

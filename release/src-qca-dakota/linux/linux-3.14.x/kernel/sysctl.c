@@ -1319,6 +1319,14 @@ static struct ctl_table vm_table[] = {
 		.extra1		= &zero,
 	},
 	{
+		.procname	= "low_free_kbytes_ratio",
+		.data		= &low_free_kbytes_ratio,
+		.maxlen		= sizeof(low_free_kbytes_ratio),
+		.mode		= 0644,
+		.proc_handler	= low_free_kbytes_ratio_sysctl_handler,
+		.extra1		= &zero,
+	},
+	{
 		.procname	= "percpu_pagelist_fraction",
 		.data		= &percpu_pagelist_fraction,
 		.maxlen		= sizeof(percpu_pagelist_fraction),

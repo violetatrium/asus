@@ -8,6 +8,9 @@
 #include <cmd_tftpServer.h>
 #include <malloc.h>
 #include <asm/errno.h>
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+#include <leds_lp5523.h>
+#endif
 
 #if defined(CONFIG_UBI_SUPPORT)
 #include "../drivers/mtd/ubi/ubi-media.h"
@@ -310,6 +313,9 @@ static int load_stage2(cmd_tbl_t *cmdtp, int argc, char *argv[])
 	ranand_set_sbb_max_addr(0);
 
 	if (!s2->good) {
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+		lp5523_leds_proc(LP55XX_RESCUE_LEDS);
+#endif
 		printf(" \nHello!! Enter Recuse Mode: (Check error)\n\n");
 		if (NetLoop(TFTPD) < 0)
 			return 1;
@@ -325,6 +331,9 @@ static int load_stage2(cmd_tbl_t *cmdtp, int argc, char *argv[])
 static int load_asus_firmware(cmd_tbl_t *cmdtp, int argc, char * const argv[])
 {
 	if (do_bootm(cmdtp, 0, argc, argv)) {
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+		lp5523_leds_proc(LP55XX_RESCUE_LEDS);
+#endif
 		printf(" \nHello!! Enter Recuse Mode: (Check error)\n\n");
 		if (NetLoop(TFTPD) < 0)
 			return 1;
@@ -343,7 +352,11 @@ int do_tftpd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (DETECT())		/* Reset to default button */
 	{
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+		lp5523_leds_proc(LP55XX_RESCUE_LEDS);
+#else
 		wan_red_led_on();
+#endif
 		printf(" \n## Enter Rescue Mode ##\n");
 		setenv("autostart", "no");
 		/* Wait forever for an image */
@@ -358,15 +371,31 @@ int do_tftpd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}
 
 		if (i >= press_times) {
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+			int detect_wps=1;
+#endif
 			while (DETECT_WPS()) {
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+				if (detect_wps) {
+					lp5523_leds_proc(LP55XX_RESET_LEDS);
+					detect_wps=0;
+				}
+				udelay(1000 * 90);
+#else
 				udelay(90000);
 				i++;
 				if (i & 1)
 					power_led_on();
 				else
 					power_led_off();
+#endif
 			}
+
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+			lp5523_leds_proc(LP55XX_NONE_LEDS);
+#else
 			leds_off();
+#endif
 
 			reset_to_default();
 			do_reset (NULL, 0, 0, NULL);
@@ -552,6 +581,9 @@ static void TftpHandler(uchar * pkt, unsigned dport, IPaddr_t sip, unsigned spor
 				NetStartAgain();
 				break;
 			}
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+			lp5523_leds_proc(LP55XX_RESCUE_RCV_DATA_LEDS);
+#endif
 		}
 
 		if (TftpBlock == TftpLastBlock)

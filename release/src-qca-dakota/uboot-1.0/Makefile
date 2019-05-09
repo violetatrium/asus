@@ -436,8 +436,14 @@ $(obj)u-boot.elf:	$(obj)u-boot
 		@cp -f $< $@
 		@sstrip $@
 
+ifneq "$(CONFIG_MODEL_SUB)" ""
+PACK_MODEL_NAME = $(CONFIG_MODEL_SUB)
+else
+PACK_MODEL_NAME = $(CONFIG_MODEL)
+endif
+
 $(obj)u-boot_%.img:	$(obj)u-boot.elf
-		python tools/pack.py -t $* -B -F boardconfig -o ../$@ tools/$(shell echo $(CONFIG_MODEL))$(shell echo $(CONFIG_RAM_SIZE))
+		python tools/pack.py -t $* -B -F boardconfig -o ../$@ tools/$(shell echo $(PACK_MODEL_NAME))$(shell echo $(CONFIG_RAM_SIZE))
 
 $(obj)u-boot_%.trx: $(obj)u-boot_%.img
 		$(obj)tools/mkimage -A $(ARCH) -T firmware -C none \

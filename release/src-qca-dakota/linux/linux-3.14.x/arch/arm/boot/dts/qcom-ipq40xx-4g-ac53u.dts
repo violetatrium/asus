@@ -55,27 +55,27 @@
 			};
 
 			led2 {
-				gpios = <&hc595 2 GPIO_ACTIVE_LOW>;
+				gpios = <&hc595 2 GPIO_ACTIVE_HIGH>;
 				label = "led2";	/* w_disable */
-				default-state = "keep";
+				default-state = "on";
 			};
 
 			led3 {
-				gpios = <&hc595 3 GPIO_ACTIVE_LOW>;
+				gpios = <&hc595 3 GPIO_ACTIVE_HIGH>;
 				label = "led3";	/* pmd_resin_n */
-				default-state = "keep";
+				default-state = "on";
 			};
 
 			led4 {
-				gpios = <&hc595 4 GPIO_ACTIVE_LOW>;
+				gpios = <&hc595 4 GPIO_ACTIVE_HIGH>;
 				label = "led4";	/* lte_power_en */
-				default-state = "keep";
+				default-state = "off";
 			};
 
 			led5 {
-				gpios = <&hc595 5 GPIO_ACTIVE_LOW>;
+				gpios = <&hc595 5 GPIO_ACTIVE_HIGH>;
 				label = "led5";	/* usb_en */
-				default-state = "keep";
+				default-state = "on";
 			};
 
 			led6 {

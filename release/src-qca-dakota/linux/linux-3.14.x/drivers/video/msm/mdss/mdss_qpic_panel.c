@@ -11,20 +11,10 @@
  */
 
 #include <linux/module.h>
-#include <linux/interrupt.h>
 #include <linux/of.h>
-#include <linux/of_gpio.h>
-#include <linux/gpio.h>
-#include <linux/delay.h>
-#include <linux/slab.h>
-#include <linux/leds.h>
-#include <linux/regulator/consumer.h>
-#include <linux/dma-mapping.h>
-#include <linux/uaccess.h>
 
 #include <linux/msm-sps.h>
 
-#include "mdss.h"
 #include "mdss_panel.h"
 #include "mdss_qpic.h"
 #include "mdss_qpic_panel.h"
@@ -36,9 +26,6 @@ int (*qpic_panel_on)(struct qpic_panel_io_desc *qpic_panel_io);
 EXPORT_SYMBOL(qpic_panel_on);
 void (*qpic_panel_off)(struct qpic_panel_io_desc *qpic_panel_io);
 EXPORT_SYMBOL(qpic_panel_off);
-
-static int mdss_qpic_pinctrl_init(struct platform_device *pdev,
-		struct qpic_panel_io_desc *qpic_panel_io);
 
 u32 qpic_panel_get_framerate(void)
 {
@@ -103,163 +90,6 @@ u32 qpic_send_frame(u32 x_start,
 	return 0;
 }
 
-static int mdss_qpic_pinctrl_init(struct platform_device *pdev,
-		struct qpic_panel_io_desc *qpic_panel_io)
-{
-	qpic_panel_io->pin_res.pinctrl = devm_pinctrl_get(&pdev->dev);
-	if (IS_ERR_OR_NULL(qpic_panel_io->pin_res.pinctrl)) {
-		pr_err("%s: failed to get pinctrl\n", __func__);
-		return PTR_ERR(qpic_panel_io->pin_res.pinctrl);
-	}
-
-	qpic_panel_io->pin_res.gpio_state_active
-		= pinctrl_lookup_state(qpic_panel_io->pin_res.pinctrl,
-				MDSS_PINCTRL_STATE_DEFAULT);
-	if (IS_ERR_OR_NULL(qpic_panel_io->pin_res.gpio_state_active))
-		pr_warn("%s: cannot get default pinstate\n", __func__);
-
-	qpic_panel_io->pin_res.gpio_state_suspend
-		= pinctrl_lookup_state(qpic_panel_io->pin_res.pinctrl,
-				MDSS_PINCTRL_STATE_SLEEP);
-	if (IS_ERR_OR_NULL(qpic_panel_io->pin_res.gpio_state_suspend))
-		pr_warn("%s: cannot get sleep pinstate\n", __func__);
-
-	return 0;
-}
-
-static int mdss_qpic_pinctrl_set_state(struct qpic_panel_io_desc *qpic_panel_io,
-		bool active)
-{
-	struct pinctrl_state *pin_state;
-	int rc = -EFAULT;
-
-	if (IS_ERR_OR_NULL(qpic_panel_io->pin_res.pinctrl))
-		return PTR_ERR(qpic_panel_io->pin_res.pinctrl);
-
-	pin_state = active ? qpic_panel_io->pin_res.gpio_state_active
-		: qpic_panel_io->pin_res.gpio_state_suspend;
-	if (!IS_ERR_OR_NULL(pin_state)) {
-		rc = pinctrl_select_state(qpic_panel_io->pin_res.pinctrl,
-				pin_state);
-		if (rc)
-			pr_err("%s: can not set %s pins\n", __func__,
-					active ? MDSS_PINCTRL_STATE_DEFAULT
-					: MDSS_PINCTRL_STATE_SLEEP);
-	} else {
-		pr_err("%s: invalid '%s' pinstate\n", __func__,
-					active ? MDSS_PINCTRL_STATE_DEFAULT
-					: MDSS_PINCTRL_STATE_SLEEP);
-	}
-
-	return rc;
-}
-
-static int mdss_panel_io_init(struct qpic_panel_io_desc *panel_io)
-{
-	int rc;
-	if (panel_io->vdd_vreg) {
-		rc = regulator_set_voltage(panel_io->vdd_vreg,
-			1800000, 1800000);
-		if (rc) {
-			pr_err("vdd_vreg->set_voltage failed, rc=%d\n", rc);
-			return -EINVAL;
-		}
-	}
-	if (panel_io->avdd_vreg) {
-		rc = regulator_set_voltage(panel_io->avdd_vreg,
-			2700000, 2700000);
-		if (rc) {
-			pr_err("vdd_vreg->set_voltage failed, rc=%d\n", rc);
-			return -EINVAL;
-		}
-	}
-	return 0;
-}
-
-static void mdss_panel_io_off(struct qpic_panel_io_desc *qpic_panel_io)
-{
-	if (mdss_qpic_pinctrl_set_state(qpic_panel_io, false))
-		pr_warn("%s panel on: pinctrl not enabled\n", __func__);
-
-	if (qpic_panel_io->ad8_gpio)
-		gpio_free(qpic_panel_io->ad8_gpio);
-	if (qpic_panel_io->cs_gpio)
-		gpio_free(qpic_panel_io->cs_gpio);
-	if (qpic_panel_io->rst_gpio)
-		gpio_free(qpic_panel_io->rst_gpio);
-	if (qpic_panel_io->te_gpio)
-		gpio_free(qpic_panel_io->te_gpio);
-	if (qpic_panel_io->bl_gpio)
-		gpio_free(qpic_panel_io->bl_gpio);
-	if (qpic_panel_io->vdd_vreg)
-		regulator_disable(qpic_panel_io->vdd_vreg);
-	if (qpic_panel_io->avdd_vreg)
-		regulator_disable(qpic_panel_io->avdd_vreg);
-}
-
-
-static int mdss_panel_io_on(struct qpic_panel_io_desc *qpic_panel_io)
-{
-	int rc;
-	if (qpic_panel_io->vdd_vreg) {
-		rc = regulator_enable(qpic_panel_io->vdd_vreg);
-		if (rc) {
-			pr_err("enable vdd failed, rc=%d\n", rc);
-			return -ENODEV;
-		}
-	}
-
-	if (qpic_panel_io->avdd_vreg) {
-		rc = regulator_enable(qpic_panel_io->avdd_vreg);
-		if (rc) {
-			pr_err("enable avdd failed, rc=%d\n", rc);
-			goto power_on_error;
-		}
-	}
-
-	/* GPIO settings using pinctrl */
-	if (mdss_qpic_pinctrl_set_state(qpic_panel_io, true)) {
-		pr_warn("%s panel on: pinctrl not enabled\n", __func__);
-
-		if ((qpic_panel_io->rst_gpio) &&
-			(gpio_request(qpic_panel_io->rst_gpio, "disp_rst_n"))) {
-			pr_err("%s request reset gpio failed\n", __func__);
-			goto power_on_error;
-		}
-
-		if ((qpic_panel_io->cs_gpio) &&
-			(gpio_request(qpic_panel_io->cs_gpio, "disp_cs_n"))) {
-			pr_err("%s request cs gpio failed\n", __func__);
-			goto power_on_error;
-		}
-
-		if ((qpic_panel_io->ad8_gpio) &&
-			(gpio_request(qpic_panel_io->ad8_gpio, "disp_ad8_n"))) {
-			pr_err("%s request ad8 gpio failed\n", __func__);
-			goto power_on_error;
-		}
-
-		if ((qpic_panel_io->te_gpio) &&
-			(gpio_request(qpic_panel_io->te_gpio, "disp_te_n"))) {
-			pr_err("%s request te gpio failed\n", __func__);
-			goto power_on_error;
-		}
-
-		if ((qpic_panel_io->bl_gpio) &&
-			(gpio_request(qpic_panel_io->bl_gpio, "disp_bl_n"))) {
-			pr_err("%s request bl gpio failed\n", __func__);
-			goto power_on_error;
-		}
-	}
-
-	/* wait for 20 ms after enable gpio as suggested by hw */
-	msleep(20);
-	return 0;
-power_on_error:
-	mdss_panel_io_off(qpic_panel_io);
-	return -EINVAL;
-}
-
 int mdss_qpic_panel_on(struct mdss_panel_data *pdata,
 	struct qpic_panel_io_desc *panel_io)
 {
@@ -270,10 +100,8 @@ int mdss_qpic_panel_on(struct mdss_panel_data *pdata,
 	mdss_qpic_init();
 
 	if (!panel_io->init) {
-		mdss_panel_io_init(panel_io);
 		panel_io->init = true;
 	}
-	mdss_panel_io_on(panel_io);
 	if (qpic_panel_on)
 		rc = qpic_panel_on(panel_io);
 	if (rc)
@@ -288,69 +116,7 @@ int mdss_qpic_panel_off(struct mdss_panel_data *pdata,
 {
 	if (qpic_panel_off)
 		qpic_panel_off(panel_io);
-	mdss_panel_io_off(panel_io);
 	panel_is_on = false;
-	return 0;
-}
-
-int mdss_qpic_panel_io_init(struct platform_device *pdev,
-	struct qpic_panel_io_desc *qpic_panel_io)
-{
-	int rc = 0;
-	struct device_node *np = pdev->dev.of_node;
-	int rst_gpio, cs_gpio, te_gpio, ad8_gpio, bl_gpio;
-	struct regulator *vdd_vreg;
-	struct regulator *avdd_vreg;
-
-	rc = mdss_qpic_pinctrl_init(pdev, qpic_panel_io);
-	if (rc)
-		pr_warn("%s: failed to get pin resources\n", __func__);
-
-	rst_gpio = of_get_named_gpio(np, "qcom,rst-gpio", 0);
-	cs_gpio = of_get_named_gpio(np, "qcom,cs-gpio", 0);
-	ad8_gpio = of_get_named_gpio(np, "qcom,ad8-gpio", 0);
-	te_gpio = of_get_named_gpio(np, "qcom,te-gpio", 0);
-	bl_gpio = of_get_named_gpio(np, "qcom,bl-gpio", 0);
-
-	if (!gpio_is_valid(rst_gpio))
-		pr_warn("%s: reset gpio not specified\n" , __func__);
-	else
-		qpic_panel_io->rst_gpio = rst_gpio;
-
-	if (!gpio_is_valid(cs_gpio))
-		pr_warn("%s: cs gpio not specified\n", __func__);
-	else
-		qpic_panel_io->cs_gpio = cs_gpio;
-
-	if (!gpio_is_valid(ad8_gpio))
-		pr_warn("%s: ad8 gpio not specified\n", __func__);
-	else
-		qpic_panel_io->ad8_gpio = ad8_gpio;
-
-	if (!gpio_is_valid(te_gpio))
-		pr_warn("%s: te gpio not specified\n", __func__);
-	else
-		qpic_panel_io->te_gpio = te_gpio;
-
-	if (!gpio_is_valid(bl_gpio))
-		pr_warn("%s: bl gpio not specified\n", __func__);
-	else
-		qpic_panel_io->bl_gpio = bl_gpio;
-
-	vdd_vreg = devm_regulator_get(&pdev->dev, "vdd");
-	if (IS_ERR(vdd_vreg)) {
-		qpic_panel_io->vdd_vreg = NULL;
-		pr_err("%s could not get vdd,", __func__);
-	} else
-		qpic_panel_io->vdd_vreg = vdd_vreg;
-
-	avdd_vreg = devm_regulator_get(&pdev->dev, "avdd");
-	if (IS_ERR(avdd_vreg)) {
-		qpic_panel_io->avdd_vreg = NULL;
-		pr_err("%s could not get avdd,", __func__);
-	} else
-		qpic_panel_io->avdd_vreg = avdd_vreg;
-
 	return 0;
 }
 

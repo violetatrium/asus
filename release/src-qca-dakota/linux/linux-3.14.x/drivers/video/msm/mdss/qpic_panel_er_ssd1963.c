@@ -14,20 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <linux/memory.h>
-#include <linux/kernel.h>
-#include <linux/sched.h>
-#include <linux/time.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/proc_fs.h>
-#include <linux/of.h>
-#include <linux/of_gpio.h>
+#include <linux/module.h>
 #include <linux/delay.h>
-#include <linux/regulator/consumer.h>
-#include <linux/io.h>
 
-#include "mdss.h"
 #include "mdss_qpic.h"
 #include "mdss_qpic_panel.h"
 #include "qpic_panel_er_ssd1963.h"

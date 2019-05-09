@@ -46,7 +46,7 @@
 
 	soc {
 		pinmux@800000 {
-			pinctrl-0 = <&rgmii2_pins_default &leds_pins>;
+			pinctrl-0 = <&rgmii2_pins_default>;
 			pinctrl-names = "default";
 
 			pcie1_pins: pcie1_pinmux {
@@ -141,7 +141,8 @@
 
 			leds_pins: leds_pins {
 				mux {
-					pins = "gpio7", "gpio8", "gpio9", "gpio26";
+					pins = "gpio7", "gpio8", "gpio9",
+					       "gpio26", "gpio53";
 					function = "gpio";
 					drive-strength = <2>;
 					bias-pull-down;
@@ -356,6 +357,44 @@
 			};
 		};
 
+		leds {
+			compatible = "gpio-leds";
+			pinctrl-0 = <&leds_pins>;
+			pinctrl-names = "default";
+
+			led@7 {
+				label = "led_usb1";
+				gpios = <&qcom_pinmux 7 GPIO_ACTIVE_HIGH>;
+				linux,default-trigger = "usbdev";
+				default-state = "off";
+			};
+
+			led@8 {
+				label = "led_usb3";
+				gpios = <&qcom_pinmux 8 GPIO_ACTIVE_HIGH>;
+				linux,default-trigger = "usbdev";
+				default-state = "off";
+			};
+
+			led@9 {
+				label = "status_led_fail";
+				gpios = <&qcom_pinmux 9 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+
+			led@26 {
+				label = "sata_led";
+				gpios = <&qcom_pinmux 26 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+
+			led@53 {
+				label = "status_led_pass";
+				gpios = <&qcom_pinmux 53 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+		};
+
 		mdio0: mdio {
 			compatible = "virtual,mdio-gpio";
 			#address-cells = <1>;
@@ -417,6 +456,7 @@
 			qcom,ipv4-enabled;
 			qcom,ipv6-enabled;
 			qcom,l2tpv2-enabled;
+			qcom,gre-enabled;
 			qcom,map-t-enabled;
 			qcom,pptp-enabled;
 			qcom,portid-enabled;
@@ -442,6 +482,7 @@
 			qcom,id = <1>;
 			qcom,num-irq = <2>;
 			qcom,load-addr = <0x40800000>;
+			qcom,num-queue = <2>;
 			qcom,turbo-frequency;
 
 			qcom,capwap-enabled;

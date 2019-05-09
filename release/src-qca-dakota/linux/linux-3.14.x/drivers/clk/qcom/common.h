@@ -31,6 +31,9 @@ struct qcom_cc_desc {
 extern const struct freq_tbl *qcom_find_freq(const struct freq_tbl *f,
 					     unsigned long rate);
 
+extern const struct freq_tbl *qcom_find_freq_floor(const struct freq_tbl *f,
+						   unsigned long rate);
+
 extern struct regmap *qcom_cc_map(struct platform_device *pdev,
 				  const struct qcom_cc_desc *desc);
 extern int qcom_cc_really_probe(struct platform_device *pdev,

@@ -40,6 +40,7 @@ struct dai_priv_st {
 	int mbox_rx;
 	int tx_enabled;
 	int rx_enabled;
+	int is_txmclk_fixed;
 	struct platform_device *pdev;
 };
 struct dai_priv_st dai_priv[MAX_INTF];
@@ -168,7 +169,8 @@ static int ipq40xx_audio_startup(struct snd_pcm_substream *substream,
 
 		ret = ipq40xx_audio_clk_get(&audio_tx_bclk, dev,
 						"audio_tx_bclk");
-		if (!ret)
+
+		if (!ret && !(dai_priv[intf].is_txmclk_fixed))
 			ret = ipq40xx_audio_clk_get(&audio_tx_mclk, dev,
 						"audio_tx_mclk");
 
@@ -269,12 +271,13 @@ static int ipq40xx_audio_hw_params(struct snd_pcm_substream *substream,
 
 	ipq40xx_stereo_config_reset(DISABLE, stereo_id);
 	ipq40xx_stereo_config_mic_reset(DISABLE, stereo_id);
-	ipq40xx_stereo_config_enable(ENABLE, stereo_id);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		ret = ipq40xx_audio_clk_set(audio_tx_mclk, dev, mclk);
-		if (ret)
-			return ret;
+		if (!(dai_priv[intf].is_txmclk_fixed)) {
+			ret = ipq40xx_audio_clk_set(audio_tx_mclk, dev, mclk);
+			if (ret)
+				return ret;
+		}
 
 		ret = ipq40xx_audio_clk_set(audio_tx_bclk, dev, bclk);
 		if (ret)
@@ -304,7 +307,8 @@ static void ipq40xx_audio_shutdown(struct snd_pcm_substream *substream,
 
 		/* Disable the clocks */
 		ipq40xx_audio_clk_disable(&audio_tx_bclk, dev);
-		ipq40xx_audio_clk_disable(&audio_tx_mclk, dev);
+		if (!(dai_priv[intf].is_txmclk_fixed))
+			ipq40xx_audio_clk_disable(&audio_tx_mclk, dev);
 	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		ipq40xx_glb_rx_data_port_en(DISABLE);
 		ipq40xx_glb_rx_framesync_port_en(DISABLE);
@@ -314,7 +318,6 @@ static void ipq40xx_audio_shutdown(struct snd_pcm_substream *substream,
 		ipq40xx_audio_clk_disable(&audio_rx_mclk, dev);
 	}
 	/* Disable the I2S Stereo block */
-	ipq40xx_stereo_config_enable(DISABLE, get_stereo_id(substream, intf));
 }
 
 static int ipq40xx_audio_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
@@ -667,6 +670,10 @@ static int ipq40xx_dai_probe(struct platform_device *pdev)
 		ret = -EFAULT;
 		goto error_node;
 	}
+
+	if (of_property_read_u32(np, "ipq,txmclk-fixed",
+					&dai_priv[intf].is_txmclk_fixed))
+		pr_debug("%s: ipq,txmclk-fixed not enabled\n", __func__);
 
 	dai_priv[intf].pdev = pdev;
 

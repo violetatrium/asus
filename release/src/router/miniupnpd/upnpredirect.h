@@ -15,9 +15,6 @@
 
 #ifdef ENABLE_LEASEFILE
 int reload_from_lease_file(void);
-#ifdef LEASEFILE_USE_REMAINING_TIME
-void lease_file_rewrite(void);
-#endif
 #endif
 
 /* upnp_redirect()

@@ -25,7 +25,6 @@
 			pinctrl-0 = <&mdio_pins>;
 			pinctrl-names = "default";
 			phy-reset-gpio = <&tlmm 62 0>;
-			bias-pull-up;
 		};
 
 		spi_0: spi@78b5000 { /* BLSP1 QUP1 */

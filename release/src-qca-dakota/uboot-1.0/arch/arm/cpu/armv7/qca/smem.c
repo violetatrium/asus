@@ -499,23 +499,27 @@ static char parts[4096];
 char *qca_smem_part_to_mtdparts(char *mtdid)
 {
 	qca_smem_flash_info_t *sfi = &qca_smem_flash_info;
-	int i, l;
+	int i, ret;
+	int len = sizeof(parts);
 	int device_id = 0;
 	char *part = parts, *unit;
 	int init = 0;
 	uint32_t bsize;
 
-	part += sprintf(part, "%s:", mtdid);
+	ret = snprintf(part, len, "%s:", mtdid);
+	part += ret;
+	len -= ret;
 
-	for (i = 0; i < smem_ptable.len; i++) {
+	for (i = 0; i < smem_ptable.len && len > 0; i++) {
 		struct smem_ptn *p = &smem_ptable.parts[i];
 		loff_t psize;
 		bsize = get_part_block_size(p, sfi);
 
 		if (part_which_flash(p) && init == 0) {
 			device_id = (gboard_param->spi_nand_available == 1) ? 1 : 0;
-			l = sprintf(part, ";nand%d:", device_id);
-			part += l;
+			ret = snprintf(part, len, ";nand%d:", device_id);
+			part += ret;
+			len -= ret;
 			init = 1;
 		}
 		if (p->size == (~0u)) {
@@ -539,9 +543,10 @@ char *qca_smem_part_to_mtdparts(char *mtdid)
 			unit = "@";
 		}
 
-		l = sprintf(part, "%lld%s0x%llx(%s),", psize, unit,
+		ret = snprintf(part, len, "%lld%s0x%llx(%s),", psize, unit,
 				((loff_t)p->start) * bsize, p->name);
-		part += l;
+		part += ret;
+		len -= ret;
 	}
 
 	if (i == 0)

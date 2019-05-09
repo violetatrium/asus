@@ -1,5 +1,5 @@
 #QCA SND CARD
-snd-soc-ipq40xx-objs := ipq40xx.o
+snd-soc-ipq40xx-objs := ipq40xx.o ipq40xx-wcd.o
 snd-soc-ipq40xx-pcm-i2s-objs := ipq40xx-pcm-i2s.o
 snd-soc-ipq40xx-pcm-tdm-objs := ipq40xx-pcm-tdm.o
 snd-soc-ipq40xx-pcm-spdif-objs := ipq40xx-pcm-spdif.o

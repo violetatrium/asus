@@ -50,7 +50,7 @@
 #define SPMI_MAPPING_BIT_IS_1_FLAG(X)	(((X) >> 8) & 0x1)
 #define SPMI_MAPPING_BIT_IS_1_RESULT(X)	(((X) >> 0) & 0xFF)
 
-#define SPMI_MAPPING_TABLE_LEN		255
+#define SPMI_MAPPING_TABLE_LEN		256
 #define SPMI_MAPPING_TABLE_TREE_DEPTH	16	/* Maximum of 16-bits */
 
 /* Ownership Table */

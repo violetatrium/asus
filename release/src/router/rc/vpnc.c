@@ -133,6 +133,7 @@ start_vpnc(void)
 		} else
 		if (nvram_match(strcat_r(prefix, "pptp_options_x", tmp), "+mppe-56")) {
 			fprintf(fp, "nomppe-40\n"
+				    "nomppe-128\n"
 				    "require-mppe\n"
 				    "require-mppe-56\n");
 		} else
@@ -142,11 +143,9 @@ start_vpnc(void)
 				    "require-mppe\n"
 				    "require-mppe-128\n");
 		} else
-		if (nvram_match(strcat_r(prefix, "pptp_options_x", tmp), "")) {
+		if (nvram_match(strcat_r(prefix, "pptp_options_x", tmp), ""))
 			fprintf(fp, "require-mppe-40\n"
-				    "require-mppe-56\n"
-				    "require-mppe-128\n");
-		}
+				    	"require-mppe-128\n");
 	} else {
 		fprintf(fp, "nomppe nomppc\n");
 
@@ -199,17 +198,6 @@ start_vpnc(void)
 	fprintf(fp, "ip-down-script %s\n", "/tmp/ppp/vpnc-ip-down");
 	fprintf(fp, "ip-pre-up-script %s\n", "/tmp/ppp/vpnc-ip-pre-up");
 	fprintf(fp, "auth-fail-script %s\n", "/tmp/ppp/vpnc-auth-fail");
-
-#if 0 /* unsupported */
-#ifdef RTCONFIG_IPV6
-	switch (get_ipv6_service()) {
-		case IPV6_NATIVE_DHCP:
-		case IPV6_MANUAL:
-			fprintf(fp, "+ipv6\n");
-			break;
-        }
-#endif
-#endif
 
 	/* user specific options */
 	fprintf(fp, "%s\n",
@@ -345,51 +333,55 @@ void update_vpnc_state(char *prefix, int state, int reason)
 int vpnc_update_resolvconf(void)
 {
 	FILE *fp;
-	char tmp[32];
-	char prefix[] = "vpnc_";
-	char word[256], *next;
+#ifdef NORESOLV /* dnsmasq uses no resolv.conf */
+	FILE *fp_servers;
+#endif
+	char tmp[100], prefix[] = "vpnc_";
+	char *wan_dns, *next;
 	int lock;
-	char *wan_dns, *wan_xdns;
+#ifdef RTCONFIG_YANDEXDNS
+	int yadns_mode = nvram_get_int("yadns_enable_x") ? nvram_get_int("yadns_mode") : YADNS_DISABLED;
+#endif
 
 	lock = file_lock("resolv");
 
 	if (!(fp = fopen("/tmp/resolv.conf", "w+"))) {
 		perror("/tmp/resolv.conf");
-		file_unlock(lock);
-		return errno;
+		goto error;
 	}
-
-#if 0 /* unsupported */
-#ifdef RTCONFIG_IPV6
-	/* Handle IPv6 DNS before IPv4 ones */
-	if (ipv6_enabled()) {
-		if ((get_ipv6_service() == IPV6_NATIVE_DHCP) && nvram_get_int(ipv6_nvname("ipv6_dnsenable"))) {
-			foreach(word, nvram_safe_get(ipv6_nvname("ipv6_get_dns")), next)
-				fprintf(fp, "nameserver %s\n", word);
-		} else
-		for (unit = 1; unit <= 3; unit++) {
-			sprintf(tmp, "ipv6_dns%d", unit);
-			next = nvram_safe_get(ipv6_nvname(tmp));
-			if (*next && strcmp(next, "0.0.0.0") != 0)
-				fprintf(fp, "nameserver %s\n", next);
-		}
+#ifdef NORESOLV /* dnsmasq uses no resolv.conf */
+	if (!(fp_servers = fopen("/tmp/resolv.dnsmasq", "w+"))) {
+		perror("/tmp/resolv.dnsmasq");
+		fclose(fp);
+		goto error;
 	}
-#endif
 #endif
 
 	wan_dns = nvram_safe_get(strcat_r(prefix, "dns", tmp));
-	wan_xdns = nvram_safe_get(strcat_r(prefix, "xdns", tmp));
-
-	foreach(word, (*wan_dns ? wan_dns : wan_xdns), next)
-		fprintf(fp, "nameserver %s\n", word);
+	foreach(tmp, wan_dns, next) {
+		fprintf(fp, "nameserver %s\n", tmp);
+#ifdef NORESOLV /* dnsmasq uses no resolv.conf */
+#ifdef RTCONFIG_YANDEXDNS
+		if (yadns_mode != YADNS_DISABLED)
+			continue;
+#endif
+		fprintf(fp_servers, "server=%s\n", tmp);
+#endif
+	}
 
 	fclose(fp);
-
+#ifdef NORESOLV /* dnsmasq uses no resolv.conf */
+	fclose(fp_servers);
+#endif
 	file_unlock(lock);
 
 	reload_dnsmasq();
 
 	return 0;
+
+error:
+	file_unlock(lock);
+	return -1;
 }
 
 void vpnc_add_firewall_rule()
@@ -410,6 +402,11 @@ void vpnc_add_firewall_rule()
 			eval("iptables", "-I", "FORWARD", "-p", "tcp", "--tcp-flags", "SYN,RST", "SYN", "-j", "TCPMSS", "--clamp-mss-to-pmtu");
 #ifdef RTCONFIG_BCMARM
 		else	/* mark tcp connection to bypass CTF */
+#ifdef HND_ROUTER
+			if (nvram_match("fc_disable", "0") && nvram_match("fc_pt_war", "1"))
+#else
+			if (nvram_match("ctf_disable", "0"))
+#endif
 			eval("iptables", "-t", "mangle", "-A", "FORWARD", "-p", "tcp", 
 				"-m", "state", "--state", "NEW","-j", "MARK", "--set-mark", "0x01/0x7");
 #endif
@@ -468,7 +465,8 @@ vpnc_up(char *vpnc_ifname)
 	route_del(vpnc_ifname, 0, nvram_safe_get(strcat_r(prefix, "gateway", tmp)), NULL, "255.255.255.255");
 
 	/* Add dns servers to resolv.conf */
-	vpnc_update_resolvconf();
+	if (nvram_invmatch(strcat_r(prefix, "dns", tmp), ""))
+		vpnc_update_resolvconf();
 
 	/* Add firewall rules for VPN client */
 	vpnc_add_firewall_rule();
@@ -514,15 +512,9 @@ vpnc_ipup_main(int argc, char **argv)
 
 	strcpy(buf, "");
 	if ((value = getenv("DNS1")))
-		sprintf(buf, "%s", value);
+		snprintf(buf, sizeof(buf), "%s", value);
 	if ((value = getenv("DNS2")))
-		sprintf(buf + strlen(buf), "%s%s", strlen(buf) ? " " : "", value);
-
-	/* empty DNS means they either were not requested or peer refused to send them.
-	 * lift up underlying xdns value instead, keeping "dns" filled */
-	if (strlen(buf) == 0)
-		sprintf(buf, "%s", nvram_safe_get(strcat_r(prefix, "xdns", tmp)));
-
+		snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%s", strlen(buf) ? " " : "", value);
 	nvram_set(strcat_r(prefix, "dns", tmp), buf);
 
 	vpnc_up(vpnc_ifname);
@@ -547,6 +539,11 @@ void vpnc_del_firewall_rule()
 		eval("iptables", "-D", "FORWARD", "-p", "tcp", "--tcp-flags", "SYN,RST", "SYN", "-j", "TCPMSS", "--clamp-mss-to-pmtu");
 #ifdef RTCONFIG_BCMARM
 	else
+#ifdef HND_ROUTER
+		if (nvram_match("fc_disable", "0") && nvram_match("fc_pt_war", "1"))
+#else
+		if (nvram_match("ctf_disable", "0"))
+#endif
 		eval("iptables", "-t", "mangle", "-D", "FORWARD", "-p", "tcp", 
 			"-m", "state", "--state", "NEW","-j", "MARK", "--set-mark", "0x01/0x7");
 #endif

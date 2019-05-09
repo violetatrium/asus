@@ -331,6 +331,7 @@ struct msm_spi {
 	/* DMA data */
 	enum msm_spi_mode        mode;
 	bool                     use_dma;
+	bool			 dma_pipe_connect;
 	int                      tx_dma_chan;
 	int                      tx_dma_crci;
 	int                      rx_dma_chan;

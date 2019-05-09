@@ -153,9 +153,9 @@ int find_part_efi(block_dev_desc_t * dev_desc, char *name, disk_partition_t * in
 			info->size = ((ulong)le64_to_int(gpt_pte[i].ending_lba) + 1) - info->start;
 			info->blksz = GPT_BLOCK_SIZE;
 
-			sprintf((char *)info->name, "%s",
+			snprintf((char *)info->name, sizeof(info->name), "%s",
 					print_efiname(&gpt_pte[i]));
-			sprintf((char *)info->type, "U-Boot");
+			snprintf((char *)info->type, sizeof(info->type), "U-Boot");
 			pos = i + 1;
 		}
 	}
@@ -242,9 +242,9 @@ int get_partition_info_efi(block_dev_desc_t * dev_desc, int part,
 		     - info->start;
 	info->blksz = GPT_BLOCK_SIZE;
 
-	sprintf((char *)info->name, "%s",
+	snprintf((char *)info->name, sizeof(info->name), "%s",
 			print_efiname(&gpt_pte[part - 1]));
-	sprintf((char *)info->type, "U-Boot");
+	snprintf((char *)info->type, sizeof(info->type), "U-Boot");
 
 	debug("%s: start 0x%lX, size 0x%lX, name %s", __func__,
 		info->start, info->size, info->name);

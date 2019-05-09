@@ -214,7 +214,10 @@ function tryParseJSON (jsonString){
 var login_info =  tryParseJSON('<% login_error_info(); %>');
 var isIE8 = navigator.userAgent.search("MSIE 8") > -1; 
 var isIE9 = navigator.userAgent.search("MSIE 9") > -1; 
-var remaining_time = 60 - login_info.lock_time;
+var remaining_time = login_info.lock_time;
+var remaining_time_min;
+var remaining_time_sec;
+var remaining_time_show;
 var countdownid, rtime_obj;
 var redirect_page = login_info.page;
 var isRouterMode = ('<% nvram_get("sw_mode"); %>' == '1') ? true : false;
@@ -238,17 +241,11 @@ function initial(){
 		document.getElementById("password_title_ie").style.display ="";
 	}
 
-	if('<% check_asus_model(); %>' == '0'){
-		document.getElementById("warming_field").style.display ="";
-		disable_input(0);
-		disable_button(1);
-	}
-
 	if(flag != ""){
 		document.getElementById("error_status_field").style.display ="";
 
 		if(flag == 3){
-			document.getElementById("error_status_field").innerHTML ="* Invalid username or password";
+			document.getElementById("error_status_field").innerHTML ="* <#JS_validLogin#>";
 		}
 		else if(flag == 7){
 			document.getElementById("error_status_field").innerHTML ="You have entered an incorrect username or password 5 times. Please try again after "+"<span id='rtime'></span>"+" seconds.";
@@ -256,7 +253,7 @@ function initial(){
 			disable_input(1);
 			disable_button(1);
 			rtime_obj=document.getElementById("rtime");
-			rtime_obj.innerHTML=remaining_time;
+			countdownfunc();
 			countdownid = window.setInterval(countdownfunc,1000);
 		}
 		else if(flag == 8){
@@ -305,8 +302,11 @@ function initial(){
 	if(history.pushState != undefined) history.pushState("", document.title, window.location.pathname);
 }
 
-function countdownfunc(){ 
-	rtime_obj.innerHTML=remaining_time;
+function countdownfunc(){
+	remaining_time_min = checkTime(Math.floor(remaining_time/60));
+	remaining_time_sec = checkTime(Math.floor(remaining_time%60));
+	remaining_time_show = remaining_time_min +":"+ remaining_time_sec;
+	rtime_obj.innerHTML = remaining_time_show;
 	if (remaining_time==0){
 		clearInterval(countdownid);
 		setTimeout("top.location.href='/Main_Login.asp';", 2000);
@@ -384,16 +384,16 @@ function login(){
 			|| redirect_page.indexOf(" ") != -1 
 			|| redirect_page.indexOf("//") != -1 
 			|| redirect_page.indexOf("http") != -1
-			|| (redirect_page.indexOf(".asp") == -1 && redirect_page.indexOf(".htm") == -1)
+			|| (redirect_page.indexOf(".asp") == -1 && redirect_page.indexOf(".htm") == -1 && redirect_page != "send_IFTTTPincode.cgi" && redirect_page != "cfg_onboarding.cgi")
 		){
-			document.form.next_page.value = "index.asp";
+			document.form.next_page.value = "<% rel_index_page(); %>";
 		}
 		else{
 			document.form.next_page.value = redirect_page;
 		}
 	}
 	catch(e){
-		document.form.next_page.value = "index.asp";
+		document.form.next_page.value = "<% rel_index_page(); %>";
 	}
 
 	document.form.submit();
@@ -415,6 +415,13 @@ function disable_button(val){
 	else
 		document.getElementsByClassName('button')[0].style.display = "none";
 }
+
+function checkTime(i){
+	if (i<10){
+		i="0" + i
+	}
+	return i
+}
 </script>
 </head>
 <body class="wrapper" onload="initial();">
@@ -431,12 +438,11 @@ function disable_button(val){
 <input type="hidden" name="login_authorization" value="">
 <div class="div_table main_field_gap">
 	<div class="div_tr">
-		<div id="warming_field" style="display:none;" class="warming_desc">Note: the router you are using is not an ASUS device or has not been authorised by ASUS. ASUSWRT might not work properly on this device.</div>
 		<div class="title_name">
 			<div class="div_td img_gap">
 				<div class="login_img"></div>
 			</div>
-			<div class="div_td">SIGN IN</div>
+			<div class="div_td"><#CTL_signin#></div>
 		</div>	
 		<div class="prod_madelName"><#Web_Title2#></div>
 

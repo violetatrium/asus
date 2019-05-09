@@ -206,6 +206,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
 };
 
 int min_free_kbytes = 1024;
+int low_free_kbytes_ratio;
 int user_min_free_kbytes = -1;
 
 static unsigned long __meminitdata nr_kernel_pages;
@@ -5673,6 +5674,7 @@ static void setup_per_zone_lowmem_reserve(void)
 static void __setup_per_zone_wmarks(void)
 {
 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
+	unsigned long pages_low;
 	unsigned long lowmem_pages = 0;
 	struct zone *zone;
 	unsigned long flags;
@@ -5712,8 +5714,22 @@ static void __setup_per_zone_wmarks(void)
 			zone->watermark[WMARK_MIN] = tmp;
 		}
 
-		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
-		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
+		if ((zone == &zone->zone_pgdat->node_zones[ZONE_NORMAL]) &&
+							low_free_kbytes_ratio) {
+			pages_low = (zone->managed_pages *
+					low_free_kbytes_ratio) / 100;
+			zone->watermark[WMARK_LOW]  = pages_low;
+			zone->watermark[WMARK_HIGH] = pages_low +
+							(pages_low >> 1);
+			pr_info("Modified watermark limit:low:%lukB\thigh:%lukB\n",
+				K(zone->watermark[WMARK_LOW]),
+				K(zone->watermark[WMARK_HIGH]));
+		} else {
+			zone->watermark[WMARK_LOW] = min_wmark_pages(zone) +
+							(tmp >> 2);
+			zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) +
+							(tmp >> 1);
+		}
 
 		__mod_zone_page_state(zone, NR_ALLOC_BATCH,
 			high_wmark_pages(zone) - low_wmark_pages(zone) -
@@ -5852,6 +5868,34 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
 		user_min_free_kbytes = min_free_kbytes;
 		setup_per_zone_wmarks();
 	}
+	return 0;
+}
+
+/*
+ * low_free_kbytes_ratio_sysctl_handler - just a wrapper around proc_dointvec()
+ *	so that we can call two helper functions whenever low_free_kbytes_ratio
+ *	changes.
+ */
+int low_free_kbytes_ratio_sysctl_handler(ctl_table *table, int write,
+	void __user *buffer, size_t *length, loff_t *ppos)
+{
+	int rc;
+	int tmp = low_free_kbytes_ratio;
+
+	rc = proc_dointvec_minmax(table, write, buffer, length, ppos);
+	if (rc)
+		return rc;
+
+	if (write) {
+		if (low_free_kbytes_ratio && (low_free_kbytes_ratio < 10 ||
+					low_free_kbytes_ratio > 40)) {
+			pr_warn("low_free_kbytes_ratio is not in the permissible range\n");
+			low_free_kbytes_ratio = tmp;
+			return -EINVAL;
+		}
+		setup_per_zone_wmarks();
+	}
+
 	return 0;
 }
 

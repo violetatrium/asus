@@ -127,6 +127,9 @@ static void br_do_proxy_arp(struct sk_buff *skb, struct net_bridge *br,
 	}
 }
 
+#if defined(CONFIG_MAPAC1300) || defined(CONFIG_MAPAC2200) || defined(CONFIG_VZWAC1300)
+extern char brnf_lan_nic[IFNAMSIZ];
+#endif
 /* note: already called with rcu_read_lock */
 int br_handle_frame_finish(struct sk_buff *skb)
 {
@@ -175,6 +178,18 @@ int br_handle_frame_finish(struct sk_buff *skb)
 	if (is_broadcast_ether_addr(dest)) {
 		skb2 = skb;
 		unicast = false;
+#if defined(CONFIG_MAPAC1300) || defined(CONFIG_MAPAC2200) || defined(CONFIG_VZWAC1300)
+		if (brnf_lan_nic[0]!='\0') {
+			/* const unsigned char *ssrc = eth_hdr(skb)->h_source; */
+			if (/* (ssrc[0]==0x02) && (ssrc[1]==0x03) && */ strcmp(skb->dev->name, brnf_lan_nic)==0) {
+				struct udphdr * udphpt = (struct udphdr *) (skb_network_header(skb) + 20);
+				if (udphpt->dest == htons(9413)) {
+					/* Do not forward the packet. */
+					skb = NULL;
+				}
+			}
+		}
+#endif
 	} else if (is_multicast_ether_addr(dest)) {
 		br_multicast_handle_hook_t *multicast_handle_hook =
 			rcu_dereference(br_multicast_handle_hook);

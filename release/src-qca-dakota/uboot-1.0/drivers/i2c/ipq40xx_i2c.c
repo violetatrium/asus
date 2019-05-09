@@ -547,7 +547,11 @@ int i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 			len -= ret;
 		}
 		data |= data_msb_16;
-		data = (data << 16);
+		if (alen == 2)
+			data = (data << 16);
+		else
+			data = (data << 8);
+
 		data |= data_lsb_16;
 		writel(data, fifo);
 	}

@@ -1398,7 +1398,7 @@ static struct pci_bus *msm_pcie_scan_bus(int nr,
 
 	PCIE_DBG(dev, "bus %d\n", nr);
 
-	bus = pci_scan_root_bus(NULL, sys->busnr, &msm_pcie_ops, sys,
+	bus = pci_scan_root_bus(&dev->pdev->dev, sys->busnr, &msm_pcie_ops, sys,
 					&sys->resources);
 	dev->pci_bus = bus;
 

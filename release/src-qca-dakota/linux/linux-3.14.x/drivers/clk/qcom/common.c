@@ -43,6 +43,22 @@ struct freq_tbl *qcom_find_freq(const struct freq_tbl *f, unsigned long rate)
 }
 EXPORT_SYMBOL_GPL(qcom_find_freq);
 
+const struct freq_tbl *qcom_find_freq_floor(const struct freq_tbl *f,
+					    unsigned long rate)
+{
+	const struct freq_tbl *best = f;
+
+	for ( ; f->freq; f++) {
+		if (rate >= f->freq)
+			best = f;
+		else
+			break;
+	}
+
+	return best;
+}
+EXPORT_SYMBOL_GPL(qcom_find_freq_floor);
+
 struct regmap *
 qcom_cc_map(struct platform_device *pdev, const struct qcom_cc_desc *desc)
 {

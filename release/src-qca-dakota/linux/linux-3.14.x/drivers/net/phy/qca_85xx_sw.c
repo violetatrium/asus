@@ -1,7 +1,7 @@
 /*
  * qca_85xx_sw.c: QCA 85xx switch driver
  *
- * Copyright (c) 2015-2016 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2017 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -34,6 +34,8 @@
 #include <linux/of_address.h>
 #include <linux/reset.h>
 #include "qca_85xx_sw_regdef.h"
+
+#define QCA_85XX_SW_MAX_REG_SIZE 16
 
 struct of_device_id dt_qca_85xx_sw[] = {
 	{ .compatible =  "qcom,qca-85xx-sw" },
@@ -983,6 +985,24 @@ static bool qca_85xx_sw_check_valid_reg(uint32_t reg_addr)
 	return true;
 }
 
+/* Copy a string and return number of char copied */
+static int qca_85xx_sw_copy_str(char *src, char *dest, int size)
+{
+	int index = 0;
+
+	if ((size <= 0) || !src || !dest)
+		return -1;
+
+	while (*src != ' ' && *src != '\0' && *src != '\n' && index < (size - 1)) {
+		dest[index] = *src;
+		src++;
+		index++;
+	}
+
+	dest[index] = '\0';
+	return index;
+}
+
 /* read from debug-fs file */
 static ssize_t qca_85xx_sw_read_reg_get(struct file *fp, char __user *ubuf,
 					size_t sz, loff_t *ppos)
@@ -1058,11 +1078,14 @@ static ssize_t qca_85xx_sw_write_reg_set(struct file *fp, const char __user *ubu
 					 size_t sz, loff_t *ppos)
 {
 	char lbuf[32];
+	char first[QCA_85XX_SW_MAX_REG_SIZE];
+	char second[QCA_85XX_SW_MAX_REG_SIZE];
 	size_t lbuf_size;
 	char *curr_ptr = lbuf;
 	unsigned long reg_addr = 0;
 	unsigned long reg_val = 0;
 	bool is_writeable = false;
+	int ret;
 
 	if (!priv)
 		return -EFAULT;
@@ -1082,12 +1105,22 @@ static ssize_t qca_85xx_sw_write_reg_set(struct file *fp, const char __user *ubu
 	if (curr_ptr == &lbuf[lbuf_size])
 		return -EINVAL;
 
-	kstrtoul(curr_ptr, 16, &reg_addr);
+	ret = qca_85xx_sw_copy_str(curr_ptr, first, QCA_85XX_SW_MAX_REG_SIZE);
+	if (ret <= 0)
+		return -EINVAL;
 
+	if (kstrtoul(first, 16, &reg_addr) < 0)
+		return -EINVAL;
+
+	curr_ptr += ret;
 	while ((*curr_ptr == ' ') && (curr_ptr < &lbuf[lbuf_size]))
 		curr_ptr++;
 
 	if (curr_ptr == &lbuf[lbuf_size])
+		return -EINVAL;
+
+	ret = qca_85xx_sw_copy_str(curr_ptr, second, QCA_85XX_SW_MAX_REG_SIZE);
+	if (ret <= 0)
 		return -EINVAL;
 
 	if (kstrtoul(curr_ptr, 16, &reg_val)) {

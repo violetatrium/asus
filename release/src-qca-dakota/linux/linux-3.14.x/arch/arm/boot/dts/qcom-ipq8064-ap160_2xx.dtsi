@@ -155,6 +155,16 @@
 					bias-disable;
 				};
 			};
+
+			leds_pins: leds_pins {
+				mux {
+					pins = "gpio7", "gpio53";
+					function = "gpio";
+					drive-strength = <2>;
+					bias-pull-down;
+					output-low;
+				};
+			};
 		};
 
 		gsbi@16300000 {
@@ -294,6 +304,25 @@
 			};
 		};
 
+		leds {
+			compatible = "gpio-leds";
+			pinctrl-0 = <&leds_pins>;
+			pinctrl-names = "default";
+
+			led@7 {
+				label = "led_usb1";
+				gpios = <&qcom_pinmux 7 GPIO_ACTIVE_HIGH>;
+				linux,default-trigger = "usbdev";
+				default-state = "off";
+			};
+
+			led@53 {
+				label = "status_led_pass";
+				gpios = <&qcom_pinmux 53 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+		};
+
 		mdio0: mdio0 {
 			compatible = "virtual,mdio-gpio";
 			#address-cells = <1>;
@@ -340,6 +369,7 @@
 			qcom,ipv4-enabled;
 			qcom,ipv6-enabled;
 			qcom,l2tpv2-enabled;
+			qcom,gre-enabled;
 			qcom,map-t-enabled;
 			qcom,pptp-enabled;
 			qcom,portid-enabled;
@@ -484,7 +514,7 @@
 			qcom,port-27-cfg-forced-duplex = <1>;
 			qcom,trunk-cfg-is-trunk-enabled = <1>;
 			qcom,trunk-cfg-trunk-id = <0>;
-			qcom,trunk-cfg-trunk-hash-policy = <0x6c>;
+			qcom,trunk-cfg-trunk-hash-policy = <0x6f>;
 			qcom,trunk-cfg-trunk-ports-bit-map = <0x1c>;
 			mdiobus = <&mdio0>;
 			sgmii-plus-if-phy-mdiobus = <&mdio1>;

@@ -10,6 +10,7 @@
 
 #define QC98XX_EEPROM1_OFFSET		0x1000
 #define QC98XX_EEPROM2_OFFSET		0x5000
+#define QC98XX_EEPROM3_OFFSET		0x9000
 #define QC98XX_EEPROM_SIZE_LARGEST	12064
 
 #include <flash_wrapper.h>
@@ -992,11 +993,16 @@ int ra_factory_erase_write(uchar *buf, ulong off, ulong len, int prot)
 	if (in_range(off, len, QC98XX_EEPROM2_OFFSET, QC98XX_EEPROM_SIZE_LARGEST)) {
 		update_qca99xx_eeprom_csum((void*)eeprom_set + QC98XX_EEPROM2_OFFSET);
 	}
+	if (in_range(off, len, QC98XX_EEPROM3_OFFSET, QC98XX_EEPROM_SIZE_LARGEST)) {
+		update_qca99xx_eeprom_csum((void*)eeprom_set + QC98XX_EEPROM3_OFFSET);
+	}
 	update_eeprom_checksum(eeprom_set);
 	return update_eeprom_sets();
 #else
 	if (in_range(off, len, QC98XX_EEPROM1_OFFSET, QC98XX_EEPROM_SIZE_LARGEST) ||
-	    in_range(off, len, QC98XX_EEPROM2_OFFSET, QC98XX_EEPROM_SIZE_LARGEST)) {
+	    in_range(off, len, QC98XX_EEPROM2_OFFSET, QC98XX_EEPROM_SIZE_LARGEST)
+	 || in_range(off, len, QC98XX_EEPROM3_OFFSET, QC98XX_EEPROM_SIZE_LARGEST)
+	   ) {
 		ret = ra_factory_read(factory_buf, 0, sizeof(factory_buf));
 		if (ret) {
 			debug("%s: read offset 0 len %d from Factory fail. (ret %d)\n",

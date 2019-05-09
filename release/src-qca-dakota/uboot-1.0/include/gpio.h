@@ -8,6 +8,9 @@ enum gpio_idx_e {
 	USB3_BTN,
 	PWR_LED,
 	PWR_RED_LED,
+#if defined(MAPAC3000)
+	PWR_GRE_LED,
+#endif
 	WPS_LED,
 	WIFI_2G_LED,
 	WIFI_5G_LED,
@@ -18,6 +21,11 @@ enum gpio_idx_e {
 	WAN2_LED,	/* WHITE or BLUE, depends on platform. */
 	WAN_RED_LED,
 	WAN2_RED_LED,
+#if defined(MAPAC3000)
+	LAN1_LED,
+	LAN2_LED,
+	LAN3_LED,
+#endif
 #if defined(CONFIG_HAVE_MULTI_LAN_LED)
 	LAN1_LED,
 	LAN2_LED,
@@ -27,6 +35,7 @@ enum gpio_idx_e {
 	LAN_LED,
 #endif
 	FAIL_OVER_LED,
+	ALL_LED,
 
 	USB3_POWER,
 #if defined(RT4GAC53U)

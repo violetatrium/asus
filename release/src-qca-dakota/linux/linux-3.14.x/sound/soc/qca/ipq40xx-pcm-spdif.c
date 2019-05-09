@@ -193,52 +193,16 @@ static void ipq40xx_pcm_free_dma_buffer(struct snd_pcm *pcm, int stream)
 
 static irqreturn_t ipq40xx_pcm_irq(int intrsrc, void *data)
 {
-	uint32_t processed_size;
-	int offset;
-	uint32_t *ptr;
-
 	struct snd_pcm_substream *substream = data;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct ipq40xx_pcm_rt_priv *pcm_rtpriv =
 		(struct ipq40xx_pcm_rt_priv *)runtime->private_data;
 
-	/* Store the last played buffer in the runtime priv struct */
-	pcm_rtpriv->last_played =
-		ipq40xx_mbox_get_last_played(pcm_rtpriv->channel);
-
-	/* Set the OWN bits */
-	processed_size = ipq40xx_mbox_get_elapsed_size(pcm_rtpriv->channel);
-	pcm_rtpriv->processed_size = processed_size;
-
-	if (processed_size > pcm_rtpriv->period_size)
-		snd_printd("Processed more than one period bytes : %d\n",
-						processed_size);
-
-	/* Need to extract the data part alone in case of Rx */
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		if (pcm_rtpriv->last_played == NULL)
-			offset = 0;
-		else
-			offset = (pcm_rtpriv->last_played->BufPtr -
-					(runtime->dma_addr & 0xFFFFFFF));
-
-		if (offset > 0) {
-			ptr = (uint32_t *)((char *)runtime->dma_area + offset -
-						processed_size);
-
-			if (ptr < (uint32_t *)runtime->dma_area)
-				goto ack;
-		}
-	}
+	pcm_rtpriv->curr_pos =
+		ipq40xx_mbox_get_played_offset(pcm_rtpriv->channel);
 
 	snd_pcm_period_elapsed(substream);
 
-	if (pcm_rtpriv->last_played == NULL) {
-		snd_printd("BUG: ISR called but no played buf found\n");
-		goto ack;
-	}
-
-ack:
 	return IRQ_HANDLED;
 }
 
@@ -246,18 +210,9 @@ static snd_pcm_uframes_t ipq40xx_pcm_spdif_pointer(
 				struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct ipq40xx_pcm_rt_priv *pcm_rtpriv;
-	snd_pcm_uframes_t ret;
+	struct ipq40xx_pcm_rt_priv *pcm_rtpriv = runtime->private_data;
 
-	pcm_rtpriv = runtime->private_data;
-
-	if (pcm_rtpriv->last_played == NULL)
-		ret = 0;
-	else
-		ret = (pcm_rtpriv->last_played->BufPtr -
-				(runtime->dma_addr & 0xFFFFFFF));
-	ret = bytes_to_frames(runtime, ret);
-	return ret;
+	return bytes_to_frames(runtime, pcm_rtpriv->curr_pos);
 }
 
 static int ipq40xx_pcm_spdif_copy(struct snd_pcm_substream *substream, int chan,
@@ -269,13 +224,24 @@ static int ipq40xx_pcm_spdif_copy(struct snd_pcm_substream *substream, int chan,
 	struct ipq40xx_pcm_rt_priv *pcm_rtpriv = runtime->private_data;
 	char *hwbuf;
 	u32 offset, size;
+	u32 period_size, i, no_of_descs;
 
 	offset = frames_to_bytes(runtime, hwoff);
 	size = frames_to_bytes(runtime, frames);
+	period_size = pcm_rtpriv->period_size;
 
 	hwbuf = buf->area + offset;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		/* At the EOF, the size of userdata to be copied might be
+		 * greater/lesser than one period size. Since each descriptor
+		 * transfers one period of data, the buffer is padded with 0s
+		 * if the size to be copied is not a multiple of period size.
+		 */
+		if (size % period_size)
+			memset(hwbuf + size, 0,
+					period_size - (size % period_size));
+
 		if (copy_from_user(hwbuf, ubuf, size))
 			return -EFAULT;
 	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -283,9 +249,16 @@ static int ipq40xx_pcm_spdif_copy(struct snd_pcm_substream *substream, int chan,
 			return -EFAULT;
 	}
 
-	ipq40xx_mbox_desc_own(pcm_rtpriv->channel, offset / size, 1);
+	no_of_descs = (size + (period_size - 1)) / period_size;
 
-	ipq40xx_mbox_dma_resume(pcm_rtpriv->channel);
+	for (i = 0; i < no_of_descs; i++) {
+		ipq40xx_mbox_desc_own(pcm_rtpriv->channel,
+					(offset / period_size), 1);
+		offset += period_size;
+	}
+
+	if (pcm_rtpriv->dma_started)
+		ipq40xx_mbox_dma_resume(pcm_rtpriv->channel);
 
 	return 0;
 }
@@ -340,9 +313,6 @@ static int ipq40xx_pcm_spdif_prepare(struct snd_pcm_substream *substream)
 			ipq40xx_stereo_spdif_pcmswap(ENABLE,
 				get_stereo_id(substream, SPDIF));
 	}
-
-	/* Set the ownership bits */
-	ipq40xx_mbox_get_elapsed_size(pcm_rtpriv->channel);
 
 	pcm_rtpriv->last_played = NULL;
 
@@ -403,6 +373,7 @@ static int ipq40xx_pcm_spdif_trigger(struct snd_pcm_substream *substream,
 				__func__, __LINE__);
 			ipq40xx_mbox_dma_release(pcm_rtpriv->channel);
 		}
+		pcm_rtpriv->dma_started = 1;
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		ret = ipq40xx_mbox_dma_resume(pcm_rtpriv->channel);
@@ -411,6 +382,7 @@ static int ipq40xx_pcm_spdif_trigger(struct snd_pcm_substream *substream,
 				__func__, __LINE__);
 			ipq40xx_mbox_dma_release(pcm_rtpriv->channel);
 		}
+		pcm_rtpriv->dma_started = 1;
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
@@ -428,6 +400,7 @@ static int ipq40xx_pcm_spdif_trigger(struct snd_pcm_substream *substream,
 				__func__, __LINE__);
 			ipq40xx_mbox_dma_release(pcm_rtpriv->channel);
 		}
+		pcm_rtpriv->dma_started = 0;
 		break;
 	default:
 		ret = -EINVAL;
@@ -497,6 +470,7 @@ static int ipq40xx_pcm_spdif_open(struct snd_pcm_substream *substream)
 	pcm_rtpriv->dev = substream->pcm->card->dev;
 	pcm_rtpriv->channel = get_mbox_id(substream, SPDIF);
 	substream->runtime->private_data = pcm_rtpriv;
+	pcm_rtpriv->dma_started = 0;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		runtime->dma_bytes =

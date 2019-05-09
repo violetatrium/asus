@@ -86,26 +86,26 @@
 				mux_1 {
 					pins = "gpio37";
 					function="wifi0_wci";
-					bias-bus-hold;
-					drive-strength = <6>;
+					bias-pull-up;
+					drive-cap = <DRV_CAP_QUARTER>;
 				};
 				mux_2 {
 					pins = "gpio43";
 					function="wifi_wci1";
-					bias-bus-hold;
-					drive-strength = <6>;
+					bias-pull-up;
+					drive-cap = <DRV_CAP_QUARTER>;
 				};
 				mux_3 {
 					pins = "gpio42";
 					function="gpio";
 					bias-pull-down;
-					drive-strength = <6>;
+					drive-cap = <DRV_CAP_QUARTER>;
 				};
 				mux_4 {
 					pins = "gpio40";
 					function="gpio";
 					bias-pull-down;
-					drive-strength = <6>;
+					drive-cap = <DRV_CAP_QUARTER>;
 				};
 			};
 		};

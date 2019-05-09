@@ -41,6 +41,7 @@ COBJS-$(CONFIG_PMIC_I2C) += pmic_i2c.o
 COBJS-$(CONFIG_PMIC_SPI) += pmic_spi.o
 COBJS-$(CONFIG_PMIC_MAX8998) += pmic_max8998.o
 COBJS-$(CONFIG_PMIC_MAX8997) += pmic_max8997.o
+COBJS-$(CONFIG_HAVE_LP5523_LEDS) += leds_lp5523.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

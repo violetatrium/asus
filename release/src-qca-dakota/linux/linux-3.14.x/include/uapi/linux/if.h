@@ -86,7 +86,11 @@
 #define IFF_MACVLAN 0x200000		/* Macvlan device */
 #define IFF_NO_IP_ALIGN	0x200000	/* do not ip-align allocated rx pkts */
 #define IFF_TUN_TAP 0x10000000		/* virtual tunnel device */
-
+#define IFF_PPP_L2TPV2 0x1000000
+#define IFF_PPP_L2TPV3 0x2000000
+#define IFF_PPP_PPTP 0x4000000
+#define IFF_GRE_V4_TAP 0x08000000	/* GRE v4 tap device */
+#define IFF_GRE_V6_TAP 0x20000000	/* GRE v6 tap device */
 
 #define IF_GET_IFACE	0x0001		/* for querying only */
 #define IF_GET_PROTO	0x0002
@@ -133,7 +137,7 @@ enum {
 };
 
 /*
- *	Device mapping structure. I'd just gone off and designed a 
+ *	Device mapping structure. I'd just gone off and designed a
  *	beautiful scheme using only loadable modules with arguments
  *	for driver options and along come the PCMCIA people 8)
  *
@@ -145,7 +149,7 @@ enum {
 struct ifmap {
 	unsigned long mem_start;
 	unsigned long mem_end;
-	unsigned short base_addr; 
+	unsigned short base_addr;
 	unsigned char irq;
 	unsigned char dma;
 	unsigned char port;
@@ -182,7 +186,7 @@ struct ifreq {
 	{
 		char	ifrn_name[IFNAMSIZ];		/* if name, e.g. "en0" */
 	} ifr_ifrn;
-	
+
 	union {
 		struct	sockaddr ifru_addr;
 		struct	sockaddr ifru_dstaddr;

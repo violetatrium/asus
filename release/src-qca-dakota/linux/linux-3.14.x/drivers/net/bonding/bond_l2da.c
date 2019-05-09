@@ -738,7 +738,7 @@ int bond_l2da_get_default_slave_name(struct bonding *bond, char *buf, int size)
 
 	read_lock_bh(&bond_info->lock);
 	if (bond_info->default_slave) {
-		strncpy(buf, netdev_name(bond_info->default_slave->dev),
+		strlcpy(buf, netdev_name(bond_info->default_slave->dev),
 			IFNAMSIZ);
 		buf[IFNAMSIZ - 1] = 0;
 	}

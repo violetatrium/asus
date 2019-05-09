@@ -86,7 +86,7 @@ int ipq_phy_mdio_init(char *name)
 	bus->read = ipq_phy_read;
 	bus->write = ipq_phy_write;
 	bus->reset = NULL;
-	sprintf(bus->name, name);
+	snprintf(bus->name, MDIO_NAME_LEN, name);
 
 	return mdio_register(bus);
 }

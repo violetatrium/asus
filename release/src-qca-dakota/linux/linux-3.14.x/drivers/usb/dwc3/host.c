@@ -51,6 +51,7 @@ int dwc3_host_init(struct dwc3 *dwc)
 	memset(&pdata, 0, sizeof(pdata));
 
 	pdata.usb2_susphy_quirk = dwc->enable_usb2susphy_quirk;
+	pdata.usb3_dev_reset_quirk = dwc->usb3_dev_reset_quirk;
 	pdata.susphy = &dwc->susphy;
 	ret = platform_device_add_data(xhci, &pdata, sizeof(pdata));
 	if (ret) {

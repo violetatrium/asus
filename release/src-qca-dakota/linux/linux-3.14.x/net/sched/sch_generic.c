@@ -774,6 +774,7 @@ void dev_shutdown(struct net_device *dev)
 
 	WARN_ON(timer_pending(&dev->watchdog_timer));
 }
+EXPORT_SYMBOL(dev_shutdown);
 
 void psched_ratecfg_precompute(struct psched_ratecfg *r,
 			       const struct tc_ratespec *conf,

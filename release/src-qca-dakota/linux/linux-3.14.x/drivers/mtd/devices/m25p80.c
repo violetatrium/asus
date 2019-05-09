@@ -1165,7 +1165,7 @@ static const struct spi_device_id *jedec_probe(struct spi_device *spi,
 		/* Fall back to Default Configuration */
 		def_id.driver_data = (INFO(jedec, 0, sector_size_def,
 						num_sectors_def, 0));
-		strcpy(def_id.name, "default");
+		strlcpy(def_id.name, "default", SPI_NAME_SIZE);
 		return &def_id;
 	}
 }

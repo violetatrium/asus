@@ -153,7 +153,7 @@
 	soc {
 
 		pinmux@800000 {
-			pinctrl-0 = <&mdio0_pins_default &rgmii2_pins_default &leds_pins>;
+			pinctrl-0 = <&mdio0_pins_default &rgmii2_pins_default>;
 			pinctrl-names = "default";
 
 			i2c4_pins: i2c4_pinmux {
@@ -393,10 +393,16 @@
 
 		usb30@0 {
 			status = "ok";
+			dwc3@11000000 {
+				usb3_dev_reset_quirk;
+			};
 		};
 
 		usb30@1 {
 			status = "ok";
+			dwc3@10000000 {
+				usb3_dev_reset_quirk;
+			};
 		};
 
 		gpio_keys {
@@ -415,6 +421,30 @@
 				gpios = <&qcom_pinmux 22 GPIO_ACTIVE_LOW>;
 				linux,input-type = <1>;
 				debounce-interval = <60>;
+			};
+		};
+
+		leds {
+			compatible = "gpio-leds";
+			pinctrl-0 = <&leds_pins>;
+			pinctrl-names = "default";
+
+			led@23 {
+				label = "status_led_pass";
+				gpios = <&qcom_pinmux 23 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+
+			led@26 {
+				label = "sata_led";
+				gpios = <&qcom_pinmux 26 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+
+			led@33 {
+				label = "status_led_fail";
+				gpios = <&qcom_pinmux 33 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
 			};
 		};
 
@@ -485,6 +515,7 @@
 			qcom,ipv4-enabled;
 			qcom,ipv6-enabled;
 			qcom,l2tpv2-enabled;
+			qcom,gre-enabled;
 			qcom,map-t-enabled;
 			qcom,pptp-enabled;
 			qcom,portid-enabled;

@@ -102,7 +102,8 @@ char *port_get(char *name)
         //char tmp_name[256]="/tmp/aicloud_nvram_check.sh";
         char *cmd_name;
         cmd_name=(char *)malloc(sizeof(char)*(strlen(tmp_name)+strlen(name)+2));
-        snprintf(cmd_name, sizeof(cmd_name), "%s %s", tmp_name, name);
+        memset(cmd_name,0,sizeof(cmd_name));
+        sprintf(cmd_name,"%s %s",tmp_name,name);
         system(cmd_name);
         free(cmd_name);
 
@@ -140,7 +141,8 @@ int webdav_match(char *name,int id)
         //char tmp_name[256]="/tmp/aicloud_nvram_check.sh";
         char *cmd_name;
         cmd_name=(char *)malloc(sizeof(char)*(strlen(tmp_name)+strlen(name)+2));
-        snprintf(cmd_name, sizeof(cmd_name), "%s %s", tmp_name, name);
+        memset(cmd_name,0,sizeof(cmd_name));
+        sprintf(cmd_name,"%s %s",tmp_name,name);
         system(cmd_name);
         free(cmd_name);
 
@@ -221,6 +223,7 @@ int main(int argc, char *argv[]) {
 	if (fp==NULL) return -1;
 	
 	/* Load modules */
+	fprintf(fp, "server.modules+=(\"mod_aicloud_invite\")\n");
 	fprintf(fp, "server.modules+=(\"mod_aicloud_auth\")\n");
 #ifndef APP_IPKG
 	fprintf(fp, "server.modules+=(\"mod_alias\")\n");
@@ -270,7 +273,11 @@ int main(int argc, char *argv[]) {
 	fprintf(fp, "server.upload-dirs=(\"/tmp/lighttpd/uploads\")\n");
 	fprintf(fp, "server.errorlog=\"/tmp/lighttpd/err.log\"\n");
 	fprintf(fp, "server.pid-file=\"/tmp/lighttpd/lighttpd.pid\"\n");
+#if (defined APP_IPKG) && (defined I686)
+    fprintf(fp, "server.arpping-interface=\"br2\"\n");
+#else
 	fprintf(fp, "server.arpping-interface=\"br0\"\n");
+#endif
 #ifndef APP_IPKG
 	fprintf(fp, "server.errorfile-prefix=\"/usr/lighttpd/css/status-\"\n");
 #else
@@ -332,7 +339,11 @@ int main(int argc, char *argv[]) {
 	fprintf(fp, "       alias.url=(\"/%s\"=>\"/mnt\")\n", get_productid());
     fprintf(fp, "       webdav.activate=\"enable\"\n");
     fprintf(fp, "       webdav.is-readonly=\"disable\"\n");
+#if (defined APP_IPKG) && (defined I686)
+    fprintf(fp, "       webdav.sqlite-db-name=\"/opt/etc/webdav.db\"\n");
+#else
     fprintf(fp, "       webdav.sqlite-db-name=\"/tmp/lighttpd/webdav.db\"\n");
+#endif
     fprintf(fp, "   }\n");
 	fprintf(fp, "	else $HTTP[\"url\"]=~\"^/smb($|/)\"{\n");
 	fprintf(fp, "		server.document-root = \"/\"\n");
@@ -361,7 +372,11 @@ int main(int argc, char *argv[]) {
    	fprintf(fp, "	    smbdav.activate = \"enable\" \n");
     fprintf(fp, "	    smbdav.is-readonly = \"disable\" \n");
     fprintf(fp, "	    smbdav.always-auth = \"enable\" \n");
+#if (defined APP_IPKG) && (defined I686)
+    fprintf(fp, "	    smbdav.sqlite-db-name = \"/opt/etc/smbdav.db\" \n");
+#else
     fprintf(fp, "	    smbdav.sqlite-db-name = \"/tmp/lighttpd/smbdav.db\" \n");
+#endif
     fprintf(fp, "	    usertrack.cookie-name = \"SMBSESSID\" \n");
 	fprintf(fp, "	}\n");
 	fprintf(fp, "}\n");
@@ -486,10 +501,17 @@ WEBDAV_SETTING:
 	
 	//FILE* fd;
 	//if (NULL != (fd = fopen("/etc/intermediate_cert.pem", "rb"))) {
+#ifndef APP_IPKG
 	if (nvram_match("https_intermediate_crt_save", "1")){
 		fprintf(fp, "   ssl.ca-file=\"/etc/intermediate_cert.pem\"\n");
 		//fclose(fd);
 	}
+#else
+	if (webdav_match("https_intermediate_crt_save", 1)){
+		fprintf(fp, "   ssl.ca-file=\"/etc/intermediate_cert.pem\"\n");
+		//fclose(fd);
+	}
+#endif
 
 	fprintf(fp, "	ssl.engine=\"enable\"\n");
 	fprintf(fp, "   ssl.use-compression=\"disable\"\n");
@@ -507,7 +529,11 @@ WEBDAV_SETTING:
 	fprintf(fp, "       alias.url=(\"/%s\"=>\"/mnt\")\n", get_productid());	
 	fprintf(fp, "		webdav.activate=\"enable\"\n");
 	fprintf(fp, "		webdav.is-readonly=\"disable\"\n");
+#if (defined APP_IPKG) && (defined I686)
+	fprintf(fp, "		webdav.sqlite-db-name=\"/opt/etc/webdav.db\"\n");
+#else
 	fprintf(fp, "		webdav.sqlite-db-name=\"/tmp/lighttpd/webdav.db\"\n");
+#endif
 	fprintf(fp, "	}\n");
 	fprintf(fp, "	else $HTTP[\"url\"]=~\"^/smb($|/)\"{\n");
 	fprintf(fp, "		server.document-root = \"/\"\n");
@@ -542,7 +568,11 @@ WEBDAV_SETTING:
    	fprintf(fp, "	    smbdav.activate = \"enable\" \n");
     fprintf(fp, "	    smbdav.is-readonly = \"disable\" \n");
     fprintf(fp, "	    smbdav.always-auth = \"enable\" \n");
+#if (defined APP_IPKG) && (defined I686)
+	fprintf(fp, "	    smbdav.sqlite-db-name = \"/opt/etc/smbdav.db\" \n");
+#else
     fprintf(fp, "	    smbdav.sqlite-db-name = \"/tmp/lighttpd/smbdav.db\" \n");
+#endif
     fprintf(fp, "	    usertrack.cookie-name = \"SMBSESSID\" \n");
 	fprintf(fp, "	}\n");
 #if 0

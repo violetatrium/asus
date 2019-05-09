@@ -80,10 +80,11 @@ static int fit_handle_file (struct image_tool_params *params)
 				params->imagefile, params->cmdname);
 		return (EXIT_FAILURE);
 	}
-	sprintf (tmpfile, "%s%s", params->imagefile, MKIMAGE_TMPFILE_SUFFIX);
+	snprintf (tmpfile, MKIMAGE_MAX_TMPFILE_LEN, "%s%s", params->imagefile,
+					MKIMAGE_TMPFILE_SUFFIX);
 
 	/* dtc -I dts -O -p 200 datafile > tmpfile */
-	sprintf (cmd, "%s %s %s > %s",
+	snprintf (cmd, MKIMAGE_MAX_DTC_CMDLINE_LEN, "%s %s %s > %s",
 		MKIMAGE_DTC, params->dtc, params->datafile, tmpfile);
 	debug ("Trying to execute \"%s\"\n", cmd);
 	if (system (cmd) == -1) {

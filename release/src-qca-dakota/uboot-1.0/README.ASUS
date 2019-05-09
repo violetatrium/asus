@@ -21,6 +21,7 @@ RT-AC58U formal - (nor + nand)
 ========
 RT-AC58U - nor flash only
 ========
+
 1. Install toolchain and configure PATH environment variable in accordance with ../../../README.TXT
 2. Run "make rt-ac58n_config"
 3. Run "make"
@@ -35,3 +36,38 @@ RT-AC58U - nor flash only
 3. Run "make"
 4. Load u-boot_norplusnand.img to 4G-AC53U.
 
+========
+MAP-AC2200 - ONFI nand
+========
+
+1. Install toolchain and configure PATH environment variable in accordance with ../../../README.TXT
+2. Run "make map-ac2200_config"
+3. Run "make"
+4. Load u-boot_nand.img to MAP-AC2200.
+
+========
+MAP-AC1300 - IPQ4018 nor + nand
+========
+
+1. Install toolchain and configure PATH environment variable in accordance with ../../../README.TXT
+2. Run "make map-ac1300_config"
+3. Run "make"
+4. Load u-boot_norplusnand.img to MAP-AC1300.
+
+========
+VZW-AC1300 - IPQ4018 nor + nand
+========
+
+1. Install toolchain and configure PATH environment variable in accordance with ../../../README.TXT
+2. Run "make vzw-ac1300_config"
+3. Run "make"
+4. Load u-boot_norplusnand.img to VZW-AC1300.
+
+========
+MAP-AC3000 - ONFI nand
+========
+
+1. Install toolchain and configure PATH environment variable in accordance with ../../../README.TXT
+2. Run "make map-ac3000_config"
+3. Run "make"
+4. Load u-boot_nand.img to MAP-AC3000.

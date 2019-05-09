@@ -167,3 +167,7 @@ obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
 obj-$(CONFIG_MFD_AS3711)	+= as3711.o
 obj-$(CONFIG_MFD_AS3722)	+= as3722.o
 obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
+#obj-$(CONFIG_MSM_CDC_PINCTRL)	+= msm-cdc-pinctrl.o
+
+obj-$(CONFIG_WCD9XXX_CODEC_UTIL) += wcd9xxx-utils.o
+obj-$(CONFIG_WCD934X_CODEC)	+= msm-cdc-supply.o msm-cdc-pinctrl.o wcd9xxx-core.o wcd9xxx-irq.o wcd934x-regmap.o wcd934x-tables.o

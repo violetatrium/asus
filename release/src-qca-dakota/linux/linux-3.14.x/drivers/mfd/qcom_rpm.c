@@ -418,7 +418,8 @@ int qcom_rpm_write(struct qcom_rpm *rpm,
 
 	mutex_unlock(&rpm->lock);
 
-	BUG_ON(ret);
+	if (ret)
+		pr_warn("%s: request failed, ret = %d\n", __func__, ret);
 
 	return ret;
 }

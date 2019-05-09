@@ -154,6 +154,7 @@ static int ipq40xx_phy_reset(struct platform_device *pdev)
 
 	usleep_range(1000, 10005);
 
+	printk("phy_reset_gpio is %d\n", phy_reset_gpio_number);
 	gpio_set_value(phy_reset_gpio_number, 0x01);
 
 phy_reset_out:

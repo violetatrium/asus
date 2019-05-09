@@ -93,6 +93,7 @@ struct msm_hsl_port {
 	u32			bus_perf_client;
 	/* BLSP UART required BUS Scaling data */
 	struct msm_bus_scale_pdata *bus_scale_table;
+	bool			break_detected;
 };
 
 #define UARTDM_VERSION_11_13	0
@@ -583,39 +584,42 @@ static void handle_rx(struct uart_port *port, unsigned int misr)
 		msm_hsl_port->old_snap_state += count;
 	}
 
+	port->icount.rx += count;
+
 	/* and now the main RX loop */
 	while (count > 0) {
-		unsigned int c;
-		char flag = TTY_NORMAL;
+		unsigned char buf[4];
+		int sysrq, r_count, i;
 
 		sr = msm_hsl_read(port, regmap[vid][UARTDM_SR]);
 		if ((sr & UARTDM_SR_RXRDY_BMSK) == 0) {
 			msm_hsl_port->old_snap_state -= count;
 			break;
 		}
-		c = msm_hsl_read(port, regmap[vid][UARTDM_RF]);
-		if (sr & UARTDM_SR_RX_BREAK_BMSK) {
-			port->icount.brk++;
-			if (uart_handle_break(port))
-				continue;
-		} else if (sr & UARTDM_SR_PAR_FRAME_BMSK) {
-			port->icount.frame++;
-		} else {
-			port->icount.rx++;
+
+		ioread32_rep(port->membase + regmap[vid][UARTDM_RF], buf, 1);
+		r_count = min_t(int, count, sizeof(buf));
+
+		for (i = 0; i < r_count; i++) {
+			char flag = TTY_NORMAL;
+
+			if (msm_hsl_port->break_detected && buf[i] == 0) {
+				port->icount.brk++;
+				flag = TTY_BREAK;
+				msm_hsl_port->break_detected = false;
+				if (uart_handle_break(port))
+					continue;
+			}
+
+			if (!(port->read_status_mask & UARTDM_SR_RX_BREAK_BMSK))
+				flag = TTY_NORMAL;
+
+			sysrq = uart_handle_sysrq_char(port, buf[i]);
+			if (!sysrq)
+				tty_insert_flip_char(tty->port, buf[i], flag);
 		}
 
-		/* Mask conditions we're ignorning. */
-		sr &= port->read_status_mask;
-		if (sr & UARTDM_SR_RX_BREAK_BMSK)
-			flag = TTY_BREAK;
-		else if (sr & UARTDM_SR_PAR_FRAME_BMSK)
-			flag = TTY_FRAME;
-
-		/* TODO: handle sysrq */
-		/* if (!uart_handle_sysrq_char(port, c)) */
-		tty_insert_flip_string(tty->port, (char *) &c,
-				       (count > 4) ? 4 : count);
-		count -= 4;
+		count -= r_count;
 	}
 
 	tty_flip_buffer_push(tty->port);
@@ -723,6 +727,11 @@ static irqreturn_t msm_hsl_irq(int irq, void *dev_id)
 	misr = msm_hsl_read(port, regmap[vid][UARTDM_MISR]);
 	/* disable interrupt */
 	msm_hsl_write(port, 0, regmap[vid][UARTDM_IMR]);
+
+	if (misr & UARTDM_ISR_RXBREAK_BMSK) {
+		msm_hsl_port->break_detected = true;
+		msm_hsl_write(port, UARTDM_CR_CMD_RESET_RXBREAK_START, regmap[vid][UARTDM_CR]);
+	}
 
 	if (misr & (UARTDM_ISR_RXSTALE_BMSK | UARTDM_ISR_RXLEV_BMSK)) {
 		handle_rx(port, misr);
@@ -937,7 +946,7 @@ static void msm_hsl_set_baud_rate(struct uart_port *port,
 	msm_hsl_write(port, RESET_STALE_INT, regmap[vid][UARTDM_CR]);
 	/* turn on RX and CTS interrupts */
 	msm_hsl_port->imr = UARTDM_ISR_RXSTALE_BMSK
-		| UARTDM_ISR_DELTA_CTS_BMSK | UARTDM_ISR_RXLEV_BMSK;
+		| UARTDM_ISR_DELTA_CTS_BMSK | UARTDM_ISR_RXLEV_BMSK | UARTDM_ISR_RXBREAK_BMSK;
 	msm_hsl_write(port, msm_hsl_port->imr, regmap[vid][UARTDM_IMR]);
 	msm_hsl_write(port, 6500, regmap[vid][UARTDM_DMRX]);
 	msm_hsl_write(port, STALE_EVENT_ENABLE, regmap[vid][UARTDM_CR]);
@@ -1130,7 +1139,7 @@ static void msm_hsl_set_termios(struct uart_port *port,
 	port->read_status_mask = 0;
 	if (termios->c_iflag & INPCK)
 		port->read_status_mask |= UARTDM_SR_PAR_FRAME_BMSK;
-	if (termios->c_iflag & (BRKINT | PARMRK))
+	if (termios->c_iflag & (IGNBRK | BRKINT | PARMRK))
 		port->read_status_mask |= UARTDM_SR_RX_BREAK_BMSK;
 
 	uart_update_timeout(port, termios->c_cflag, baud);
@@ -1492,11 +1501,6 @@ static int msm_hsl_console_setup(struct console *co, char *options)
 	msm_hsl_set_baud_rate(port, baud);
 
 	ret = uart_set_options(port, co, baud, parity, bits, flow);
-
-	mr2 = msm_hsl_read(port, regmap[vid][UARTDM_MR2]);
-	mr2 |= UARTDM_MR2_RX_ERROR_CHAR_OFF;
-	mr2 |= UARTDM_MR2_RX_BREAK_ZERO_CHAR_OFF;
-	msm_hsl_write(port, mr2, regmap[vid][UARTDM_MR2]);
 
 	msm_hsl_reset(port);
 	/* Enable transmitter */

@@ -146,6 +146,7 @@ static const struct freq_tbl ftbl_m_clk[] = {
 	{5644800, ADSS_PLL, 32, 0, 0},
 	{6144000, ADSS_PLL, 32, 0, 0},
 	{8192000, ADSS_PLL, 24, 0, 0},
+	{9600000, P_XO, 5, 0, 0},
 	{11289600, ADSS_PLL, 16, 0, 0},
 	{12288000, ADSS_PLL, 16, 0, 0},
 	{14112000, ADSS_PLL, 14, 0, 0},

@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2017, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -41,11 +41,13 @@
 
 		edma@c080000 {
 			gmac0 {
-				qcom,poll_required = <0>;
-				vlan_tag = <2 0x30>;
+				qcom,poll-required = <0>;
+				qcom,poll-required-dynamic = <1>;
+				vlan-tag = <2 0x30>;
 			};
 			gmac1 {
-				vlan_tag = <1 0xe>;
+				qcom,poll-required-dynamic = <1>;
+				vlan-tag = <1 0xe>;
 			};
 		};
 	};

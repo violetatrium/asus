@@ -167,8 +167,8 @@ HOSTCPPFLAGS =	-include $(SRCTREE)/include/libfdt_env.h \
 		-I $(SRCTREE)/tools \
 		-DCONFIG_SYS_TEXT_BASE=$(CONFIG_SYS_TEXT_BASE) \
 		-DUSE_HOSTCC \
-		-D__KERNEL_STRICT_NAMES
-
+		-D__KERNEL_STRICT_NAMES \
+#		-DTRX_NEW
 
 all:	$(obj).depend $(BINS) $(LOGO-y) subdirs
 

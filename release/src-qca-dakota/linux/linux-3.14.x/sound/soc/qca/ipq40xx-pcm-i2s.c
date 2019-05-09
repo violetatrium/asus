@@ -112,6 +112,8 @@ static int ipq40xx_pcm_preallocate_dma_buffer(struct snd_pcm *pcm,
 	size_t size;
 	u8 *area;
 	dma_addr_t addr;
+	u32 num_periods;
+	struct device_node *np;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		pcm_hw = &ipq40xx_pcm_hardware_playback;
@@ -119,6 +121,19 @@ static int ipq40xx_pcm_preallocate_dma_buffer(struct snd_pcm *pcm,
 		pcm_hw = &ipq40xx_pcm_hardware_capture;
 	else
 		return -EINVAL;
+
+	np = of_node_get(pcm->card->dev->of_node);
+	if (!(of_property_read_u32(np, "ipq,i2s-no-of-periods",
+						&num_periods))) {
+		pcm_hw->periods_min = num_periods;
+		pcm_hw->periods_max = num_periods;
+		pcm_hw->buffer_bytes_max =
+			IPQ40xx_I2S_PERIOD_BYTES_MIN * num_periods;
+		pcm_hw->period_bytes_max =
+			(IPQ40xx_I2S_PERIOD_BYTES_MIN * num_periods) / 2;
+	} else {
+		dev_dbg(pcm->card->dev, "i2s-no-of-periods property not available\n");
+	}
 
 	size = ip40xx_dma_buffer_size(pcm_hw);
 	buf->dev.type = SNDRV_DMA_TYPE_DEV;
@@ -232,13 +247,23 @@ static int ipq40xx_pcm_i2s_copy(struct snd_pcm_substream *substream, int chan,
 	struct ipq40xx_pcm_rt_priv *pcm_rtpriv = runtime->private_data;
 	char *hwbuf;
 	u32 offset, size;
+	u32 period_size, i, no_of_descs;
 
 	offset = frames_to_bytes(runtime, hwoff);
 	size = frames_to_bytes(runtime, frames);
+	period_size = pcm_rtpriv->period_size;
 
 	hwbuf = buf->area + offset;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		/* At the EOF, the size of userdata to be copied might be
+		 * greater/lesser than one period size. Since each descriptor
+		 * transfers one period of data, the buffer is padded with 0s
+		 * if the size to be copied is not a multiple of period size.
+		 */
+		if (size % period_size)
+			memset(hwbuf + size, 0,
+					period_size - (size % period_size));
 		if (copy_from_user(hwbuf, ubuf, size))
 			return -EFAULT;
 	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -246,8 +271,16 @@ static int ipq40xx_pcm_i2s_copy(struct snd_pcm_substream *substream, int chan,
 			return -EFAULT;
 	}
 
-	ipq40xx_mbox_desc_own(pcm_rtpriv->channel, offset / size, 1);
-	ipq40xx_mbox_dma_resume(pcm_rtpriv->channel);
+	no_of_descs = (size + (period_size - 1)) / period_size;
+
+	for (i = 0; i < no_of_descs; i++) {
+		ipq40xx_mbox_desc_own(pcm_rtpriv->channel,
+					(offset / period_size), 1);
+		offset += period_size;
+	}
+
+	if (pcm_rtpriv->dma_started)
+		ipq40xx_mbox_dma_resume(pcm_rtpriv->channel);
 
 	return 0;
 }
@@ -289,8 +322,9 @@ static int ipq40xx_pcm_i2s_prepare(struct snd_pcm_substream *substream)
 		return ret;
 	}
 
-	/* Set the ownership bits */
-	ipq40xx_mbox_get_elapsed_size(pcm_rtpriv->channel);
+	/* Set the ownership bits only if mmap is used */
+	if (pcm_rtpriv->mmap_flag == 1)
+		ipq40xx_mbox_get_elapsed_size(pcm_rtpriv->channel);
 
 	pcm_rtpriv->last_played = NULL;
 
@@ -320,16 +354,23 @@ static int ipq40xx_pcm_i2s_trigger(struct snd_pcm_substream *substream, int cmd)
 	int ret;
 	struct ipq40xx_pcm_rt_priv *pcm_rtpriv =
 				substream->runtime->private_data;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *dai = rtd->cpu_dai;
+	uint32_t intf = dai->driver->id;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
+		/* Enable the I2S Stereo block for operation */
+		ipq40xx_stereo_config_enable(ENABLE,
+				get_stereo_id(substream, intf));
 		ret = ipq40xx_mbox_dma_start(pcm_rtpriv->channel);
 		if (ret) {
 			pr_err("%s: %d: Error in dma start\n",
 				__func__, __LINE__);
 			ipq40xx_mbox_dma_release(pcm_rtpriv->channel);
 		}
+		pcm_rtpriv->dma_started = 1;
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		ret = ipq40xx_mbox_dma_resume(pcm_rtpriv->channel);
@@ -338,10 +379,13 @@ static int ipq40xx_pcm_i2s_trigger(struct snd_pcm_substream *substream, int cmd)
 				__func__, __LINE__);
 			ipq40xx_mbox_dma_release(pcm_rtpriv->channel);
 		}
+		pcm_rtpriv->dma_started = 1;
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
-
+		/* Disable the I2S Stereo block */
+		ipq40xx_stereo_config_enable(DISABLE,
+				get_stereo_id(substream, intf));
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		ret = ipq40xx_mbox_dma_stop(pcm_rtpriv->channel);
 		if (ret) {
@@ -349,6 +393,7 @@ static int ipq40xx_pcm_i2s_trigger(struct snd_pcm_substream *substream, int cmd)
 				__func__, __LINE__);
 			ipq40xx_mbox_dma_release(pcm_rtpriv->channel);
 		}
+		pcm_rtpriv->dma_started = 0;
 		break;
 	default:
 		ret = -EINVAL;
@@ -419,6 +464,7 @@ static int ipq40xx_pcm_i2s_open(struct snd_pcm_substream *substream)
 	pcm_rtpriv->channel = get_mbox_id(substream, intf);
 	substream->runtime->private_data = pcm_rtpriv;
 	pcm_rtpriv->mmap_flag = 0;
+	pcm_rtpriv->dma_started = 0;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		runtime->dma_bytes =

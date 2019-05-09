@@ -461,6 +461,8 @@ static int dwc3_probe(struct platform_device *pdev)
 		dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
 		dwc->enable_usb2susphy_quirk = of_property_read_bool(node,
 							"usb2-susphy-quirk");
+		dwc->usb3_dev_reset_quirk = of_property_read_bool(node,
+							"usb3_dev_reset_quirk");
 		dwc->enable_usb2_host_discon_quirk =
 			of_property_read_bool(node, "usb2-host-discon-quirk");
 

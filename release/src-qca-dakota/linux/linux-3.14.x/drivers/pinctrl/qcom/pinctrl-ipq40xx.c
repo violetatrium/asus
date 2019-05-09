@@ -27,7 +27,7 @@
 
 #define REG_BASE 0x0
 #define REG_SIZE 0x1000
-#define PINGROUP_EXTRA(id, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, func, val, mask) \
+#define PINGROUP(id, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14) \
 	{					        \
 		.name = "gpio" #id,			\
 		.pins = gpio##id##_pins,		\
@@ -62,6 +62,8 @@
 		.in_bit = 0,			\
 		.out_bit = 1,			\
 		.od_bit = 12,			\
+		.pull_res = 13,			\
+		.vm_bit = 11,			\
 		.intr_enable_bit = 0,		\
 		.intr_status_bit = 0,		\
 		.intr_target_bit = 5,		\
@@ -69,13 +71,7 @@
 		.intr_polarity_bit = 1,		\
 		.intr_detection_bit = 2,	\
 		.intr_detection_width = 2,	\
-		.extra_val = val,		\
-		.extra_mask = mask,		\
-		.extra_func = qca_mux_##func,	\
 	}
-
-#define PINGROUP(id, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14) \
-	PINGROUP_EXTRA(id, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, NA, 0, 0)
 
 static const struct pinctrl_pin_desc ipq40xx_pins[] = {
 	PINCTRL_PIN(0, "GPIO_0"),
@@ -1208,16 +1204,16 @@ static const struct msm_pingroup ipq40xx_groups[] = {
 	PINGROUP(20, blsp_i2c0, audio0, NA, wcss0_dbg16, wcss1_dbg16, NA, NA, NA, NA, NA, NA, NA, NA, NA),
 	PINGROUP(21, blsp_i2c0, audio1, NA, wcss0_dbg17, wcss1_dbg17, NA, NA, NA, NA, NA, NA, NA, NA, NA),
 	PINGROUP(22, rgmii0, audio1, NA, wcss0_dbg18, wcss1_dbg18, NA, NA, NA, NA, NA, NA, NA, NA, NA),
-	PINGROUP_EXTRA(23, sdio0, rgmii1, audio_spdifout, NA, wcss0_dbg19, wcss1_dbg19, NA, NA, NA, NA, NA, NA, NA, NA, sdio0, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(24, sdio1, rgmii2, audio0, NA, wcss0_dbg20, wcss1_dbg20, NA, NA, NA, NA, NA, NA, NA, NA, sdio1, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(25, sdio2, rgmii3, audio0, NA, wcss0_dbg21, wcss1_dbg21, NA, NA, NA, NA, NA, NA, NA, NA, sdio2, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(26, sdio3, rgmii_rx, audio0, NA, wcss0_dbg22, wcss1_dbg22, NA, NA, NA, NA, NA, NA, NA, NA, sdio3, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(27, sdio_clk, rgmii_txc, audio_td1, NA, wcss0_dbg23, wcss1_dbg23, NA, NA, NA, NA, NA, NA, NA, NA, sdio_clk, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(28, sdio_cmd, rgmii0, audio_td2, NA, wcss0_dbg24, wcss1_dbg24, NA, NA, NA, NA, NA, NA, NA, NA, sdio_cmd, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(29, sdio4, rgmii1, audio_td3, NA, wcss0_dbg25, wcss1_dbg25, NA, NA, NA, NA, NA, NA, NA, NA, sdio4, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(30, sdio5, rgmii2, audio_pwm0, NA, wcss0_dbg26, wcss1_dbg26, NA, NA, NA, NA, NA, NA, NA, NA, sdio5, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(31, sdio6, rgmii3, audio_pwm1, NA, wcss0_dbg27, wcss1_dbg27, NA, NA, NA, NA, NA, NA, NA, NA, sdio6, 0x4800u, 0x4800u),
-	PINGROUP_EXTRA(32, sdio7, rgmii_rxc, audio_pwm2, NA, wcss0_dbg28, wcss1_dbg28, NA, NA, NA, NA, NA, NA, NA, NA, sdio7, 0x4800u, 0x4800u),
+	PINGROUP(23, sdio0, rgmii1, audio_spdifout, NA, wcss0_dbg19, wcss1_dbg19, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(24, sdio1, rgmii2, audio0, NA, wcss0_dbg20, wcss1_dbg20, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(25, sdio2, rgmii3, audio0, NA, wcss0_dbg21, wcss1_dbg21, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(26, sdio3, rgmii_rx, audio0, NA, wcss0_dbg22, wcss1_dbg22, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(27, sdio_clk, rgmii_txc, audio_td1, NA, wcss0_dbg23, wcss1_dbg23, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(28, sdio_cmd, rgmii0, audio_td2, NA, wcss0_dbg24, wcss1_dbg24, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(29, sdio4, rgmii1, audio_td3, NA, wcss0_dbg25, wcss1_dbg25, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(30, sdio5, rgmii2, audio_pwm0, NA, wcss0_dbg26, wcss1_dbg26, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(31, sdio6, rgmii3, audio_pwm1, NA, wcss0_dbg27, wcss1_dbg27, NA, NA, NA, NA, NA, NA, NA, NA),
+	PINGROUP(32, sdio7, rgmii_rxc, audio_pwm2, NA, wcss0_dbg28, wcss1_dbg28, NA, NA, NA, NA, NA, NA, NA, NA),
 	PINGROUP(33, rgmii_tx, audio_pwm3, NA, wcss0_dbg29, wcss1_dbg29, NA, NA, NA, NA, NA, NA, NA, NA, NA),
 	PINGROUP(34, blsp_i2c1, audio0, NA, wcss0_dbg30, wcss1_dbg30, NA, NA, NA, NA, NA, NA, NA, NA, NA),
 	PINGROUP(35, blsp_i2c1, audio1, NA, wcss0_dbg31, wcss1_dbg31, NA, NA, NA, NA, NA, NA, NA, NA, NA),
@@ -1257,6 +1253,14 @@ static const struct msm_pingroup ipq40xx_groups[] = {
 	PINGROUP(69, qpic_pad, audio_pwm3, NA, wcss0_dbg13, wcss1_dbg13, NA, NA, NA, NA, NA, NA, NA, NA, NA),
 };
 
+static const struct msm_pinctrl_gpio_pull ipq40xx_gpio_pull = {
+	.no_pull = 0,
+	.pull_down = 1,
+	.pull_up = 2,
+	/* keeper is not supported in ipq40xx. Hence configure it as no pull */
+	.keeper = 0,
+};
+
 static const struct msm_pinctrl_soc_data ipq40xx_pinctrl = {
 	.pins = ipq40xx_pins,
 	.npins = ARRAY_SIZE(ipq40xx_pins),
@@ -1265,6 +1269,7 @@ static const struct msm_pinctrl_soc_data ipq40xx_pinctrl = {
 	.groups = ipq40xx_groups,
 	.ngroups = ARRAY_SIZE(ipq40xx_groups),
 	.ngpios = 70,
+	.gpio_pull = &ipq40xx_gpio_pull,
 };
 
 static int ipq40xx_pinctrl_probe(struct platform_device *pdev)

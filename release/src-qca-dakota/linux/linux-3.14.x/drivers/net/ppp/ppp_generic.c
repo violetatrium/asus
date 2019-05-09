@@ -65,6 +65,7 @@
 #include <asm/unaligned.h>
 #include <net/slhc_vj.h>
 #include <linux/atomic.h>
+#include <linux/if_pppox.h>
 
 #include <linux/nsproxy.h>
 #include <net/net_namespace.h>
@@ -2889,6 +2890,8 @@ ppp_connect_channel(struct channel *pch, int unit)
 	struct ppp_net *pn;
 	int ret = -ENXIO;
 	int hdrlen;
+	int ppp_proto;
+	int version;
 
 	pn = ppp_pernet(pch->chan_net);
 
@@ -2911,9 +2914,27 @@ ppp_connect_channel(struct channel *pch, int unit)
 	++ppp->n_channels;
 	pch->ppp = ppp;
 	atomic_inc(&ppp->file.refcnt);
+
+	/* Set the netdev priv flag if the prototype
+	 * is L2TP or PPTP. Return success in all cases */
+	if (!pch->chan) {
+		goto out2;
+	}
+
+	ppp_proto = ppp_channel_get_protocol(pch->chan);
+	if (ppp_proto == PX_PROTO_PPTP) {
+		ppp->dev->priv_flags |= IFF_PPP_PPTP;
+	} else if (ppp_proto == PX_PROTO_OL2TP) {
+		version = ppp_channel_get_proto_version(pch->chan);
+		if (version == 2)
+			ppp->dev->priv_flags |= IFF_PPP_L2TPV2;
+		else if (version == 3)
+			ppp->dev->priv_flags |= IFF_PPP_L2TPV3;
+	}
+
+ out2:
 	ppp_unlock(ppp);
 	ret = 0;
-
  outl:
 	write_unlock_bh(&pch->upl);
  out:
@@ -3198,6 +3219,18 @@ int ppp_channel_get_protocol(struct ppp_channel *chan)
 	return chan->ops->get_channel_protocol(chan);
 }
 
+/* ppp_channel_get_proto_version()
+ *	Call this to get channel protocol version
+ */
+int ppp_channel_get_proto_version(struct ppp_channel *chan)
+{
+	if (!chan->ops->get_channel_protocol_ver)
+		return -1;
+
+	return chan->ops->get_channel_protocol_ver(chan);
+}
+EXPORT_SYMBOL(ppp_channel_get_proto_version);
+
 /*
  * ppp_channel_hold()
  *	Call this to hold a channel.
@@ -3360,6 +3393,28 @@ void ppp_release_channels(struct ppp_channel *channels[], unsigned int chan_sz)
 		chan->ops->release(chan);
 	}
 }
+
+/* Check if ppp xmit lock is on hold */
+bool ppp_is_xmit_locked(struct net_device *dev)
+{
+	struct ppp *ppp;
+
+	if (!dev)
+		return false;
+
+	if (dev->type != ARPHRD_PPP)
+		return false;
+
+	ppp = netdev_priv(dev);
+	if (!ppp)
+		return false;
+
+	if (spin_is_locked(&(ppp)->wlock))
+		return true;
+
+	return false;
+}
+EXPORT_SYMBOL(ppp_is_xmit_locked);
 
 /* Module/initialization stuff */
 

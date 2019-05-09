@@ -48,6 +48,12 @@
 #ifdef RTCONFIG_USB
 #include <disk_io_tools.h>
 #endif
+#ifdef RTCONFIG_NOTIFICATION_CENTER
+#include <libnt.h>
+
+int sent_unpublic = 0;
+#endif
+
 
 #define DEFAULT_SCAN_INTERVAL 5
 #define TCPCHECK_TIMEOUT 3

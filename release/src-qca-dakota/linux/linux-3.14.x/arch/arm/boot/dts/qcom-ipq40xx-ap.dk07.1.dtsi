@@ -60,12 +60,12 @@
 				mux_1 {
 					pins = "gpio6";
 					function = "mdio0";
-					bias-bus-hold;
+					bias-pull-up;
 				};
 				mux_2 {
 					pins = "gpio7";
 					function = "mdc";
-					bias-bus-hold;
+					bias-pull-up;
 				};
 			};
 
@@ -124,32 +124,44 @@
 				sd0 {
 					pins = "gpio23";
 					function = "sdio0";
-					drive-strength = <10>;
+					pull-res = <RES_35_KOHM>;
+					drive-type = <DRV_TYPE_C>;
+					vm-enable;
 				};
 				sd1 {
 					pins = "gpio24";
 					function = "sdio1";
-					drive-strength = <10>;
+					pull-res = <RES_35_KOHM>;
+					drive-type = <DRV_TYPE_C>;
+					vm-enable;
 				};
 				sd2 {
 					pins = "gpio25";
 					function = "sdio2";
-					drive-strength = <10>;
+					pull-res = <RES_35_KOHM>;
+					drive-type = <DRV_TYPE_C>;
+					vm-enable;
 				};
 				sd3 {
 					pins = "gpio26";
 					function = "sdio3";
-					drive-strength = <10>;
+					pull-res = <RES_35_KOHM>;
+					drive-type = <DRV_TYPE_C>;
+					vm-enable;
 				};
 				sdclk {
 					pins = "gpio27";
 					function = "sdio_clk";
-					drive-strength = <16>;
+					pull-res = <RES_35_KOHM>;
+					drive-type = <DRV_TYPE_A>;
+					vm-enable;
 				};
 				sdcmd {
 					pins = "gpio28";
 					function = "sdio_cmd";
-					drive-strength = <10>;
+					pull-res = <RES_35_KOHM>;
+					drive-type = <DRV_TYPE_C>;
+					vm-enable;
 				};
 			};
 			ts_0_pins: ts_0_pinmux {
@@ -258,6 +270,22 @@
 			perst-gpio = <&tlmm 38 0>;
 			wake-gpio = <&tlmm 40 0>;
 			clkreq-gpio = <&tlmm 39 0>;
+
+			pcie@0 {
+				reg = <0 0 0 0 0>;
+				#interrupt-cells = <1>;
+				#size-cells = <2>;
+				#address-cells = <3>;
+				device_type = "pci";
+
+				ath10k@0,0 {
+					reg = <0 0 0 0 0>;
+					device_type = "pci";
+					qcom,mtd-name = "0:ART";
+					qcom,cal-offset = <0x9000>;
+					qcom,cal-len = <12064>;
+				};
+			};
 		};
 
 		ess-switch@c000000 {

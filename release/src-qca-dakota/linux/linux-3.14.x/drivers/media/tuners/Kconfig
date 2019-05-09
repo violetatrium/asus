@@ -3,7 +3,6 @@ config MEDIA_TUNER
 	tristate
 	depends on (MEDIA_ANALOG_TV_SUPPORT || MEDIA_RADIO_SUPPORT) && I2C
 	default y
-	select MEDIA_TUNER_XC2028 if MEDIA_SUBDRV_AUTOSELECT
 	select MEDIA_TUNER_XC5000 if MEDIA_SUBDRV_AUTOSELECT
 	select MEDIA_TUNER_XC4000 if MEDIA_SUBDRV_AUTOSELECT
 	select MEDIA_TUNER_MT20XX if MEDIA_SUBDRV_AUTOSELECT
@@ -112,13 +111,6 @@ config MEDIA_TUNER_QT1010
 	default m if !MEDIA_SUBDRV_AUTOSELECT
 	help
 	  A driver for the silicon tuner QT1010 from Quantek.
-
-config MEDIA_TUNER_XC2028
-	tristate "XCeive xc2028/xc3028 tuners"
-	depends on MEDIA_SUPPORT && I2C
-	default m if !MEDIA_SUBDRV_AUTOSELECT
-	help
-	  Say Y here to include support for the xc2028/xc3028 tuners.
 
 config MEDIA_TUNER_XC5000
 	tristate "Xceive XC5000 silicon tuner"

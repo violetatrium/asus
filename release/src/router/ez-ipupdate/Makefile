@@ -97,8 +97,15 @@ ez_ipupdate_LDFLAGS =
 
 # 2007.03.14 Yau add for ASUS DDNS
 ez_ipupdate_OBJECTS += asus_ddns.o
-CFLAGS += -I$(SRCBASE)/include -I$(TOP)/shared -DASUS_DDNS -DHAVE_STRING_H -D_LIBC
-LDFLAGS += -L$(TOP)/shared -lshared -L$(TOP)/nvram${BCMEX} -lnvram 
+CFLAGS += -I$(SRCBASE)/include -I$(TOP)/shared -DASUS_DDNS -DHAVE_STRING_H 
+ifneq ($(HND_ROUTER),y)
+CFLAGS += -D_LIBC
+endif
+LDFLAGS += -L$(TOP)/shared -lshared -L$(TOP)/nvram${BCMEX}${EX7} -lnvram 
+ifeq ($(HND_ROUTER),y)
+LDFLAGS += -L$(TOP)/wlcsm -lwlcsm
+endif
+
 #end of Yau add
 ifeq ($(RTCONFIG_BCMARM),y)
 LDFLAGS += -lgcc_s
@@ -107,6 +114,7 @@ ifeq ($(RTCONFIG_QTN),y)
 CFLAGS += -I$(TOP)/libqcsapi_client -I$(TOP)/httpd -I./sysdeps/qtn
 LDFLAGS += -L$(TOP)/libqcsapi_client -lqcsapi_client
 endif
+
 
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

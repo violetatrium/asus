@@ -56,7 +56,6 @@
 #include <net/ip6_route.h>
 #include <net/ip6_tunnel.h>
 
-
 static bool log_ecn_error = true;
 module_param(log_ecn_error, bool, 0644);
 MODULE_PARM_DESC(log_ecn_error, "Log packets received with corrupted ECN");
@@ -360,7 +359,6 @@ static void ip6gre_tunnel_uninit(struct net_device *dev)
 	ip6_tnl_dst_reset(netdev_priv(dev));
 	dev_put(dev);
 }
-
 
 static void ip6gre_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 		u8 type, u8 code, int offset, __be32 info)
@@ -1290,7 +1288,6 @@ static void ip6gre_fb_tunnel_init(struct net_device *dev)
 	dev_hold(dev);
 }
 
-
 static struct inet6_protocol ip6gre_protocol __read_mostly = {
 	.handler     = ip6gre_rcv,
 	.err_handler = ip6gre_err,
@@ -1408,7 +1405,6 @@ out:
 	return ip6gre_tunnel_validate(tb, data);
 }
 
-
 static void ip6gre_netlink_parms(struct nlattr *data[],
 				struct __ip6_tnl_parm *parms)
 {
@@ -1496,6 +1492,7 @@ static void ip6gre_tap_setup(struct net_device *dev)
 
 	dev->netdev_ops = &ip6gre_tap_netdev_ops;
 	dev->destructor = ip6gre_dev_free;
+	dev->priv_flags |= IFF_GRE_V6_TAP;
 
 	dev->iflink = 0;
 	dev->features |= NETIF_F_NETNS_LOCAL;

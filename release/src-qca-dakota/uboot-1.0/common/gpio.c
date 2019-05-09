@@ -229,6 +229,122 @@ static struct gpio_s {
 		.active_low = 0,
 	},
 #endif
+#elif defined(MAPAC1300)
+	[RST_BTN] = {
+		.name = "Reset button",
+		.gpio_nr = 0,
+		.dir = 1,
+		.is_led = 0,
+		.active_low = 1,
+	},
+	[WPS_BTN] = {
+		.name = "WPS button",
+		.gpio_nr = 63,
+		.dir = 1,
+		.is_led = 0,
+		.active_low = 1,
+	},
+#elif defined(VZWAC1300)
+	[RST_BTN] = {
+		.name = "Reset button",
+		.gpio_nr = 1,
+		.dir = 1,
+		.is_led = 0,
+		.active_low = 1,
+	},
+	[WPS_BTN] = {
+		.name = "WPS button",
+		.gpio_nr = 63,
+		.dir = 1,
+		.is_led = 0,
+		.active_low = 1,
+	},
+#elif defined(MAPAC2200)
+	[RST_BTN] = {
+		.name = "Reset button",
+		.gpio_nr = 34,
+		.dir = 1,
+		.is_led = 0,
+		.active_low = 1,
+	},
+	[WPS_BTN] = {
+		.name = "WPS button",
+		.gpio_nr = 18,
+		.dir = 1,
+		.is_led = 0,
+		.active_low = 1,
+	},
+	[ALL_LED] = {
+		.name = "ALL LED",
+		.gpio_nr = 35,
+		.dir = 0,
+		.is_led = 1,
+		.def_onoff = LED_OFF,
+		.active_low = 1,
+	},
+#elif defined(MAPAC3000)
+	[RST_BTN] = {
+		.name = "Reset button",
+		.gpio_nr = 18,
+		.dir = 1,
+		.is_led = 0,
+		.active_low = 1,
+	},
+	[WPS_BTN] = {
+		.name = "WPS button",
+		.gpio_nr = 1,
+		.dir = 1,
+		.is_led = 0,
+		.active_low = 1,
+	},
+	[PWR_LED] = {
+		.name = "PWR LED",
+		.gpio_nr = 54,
+		.dir = 0,
+		.is_led = 1,
+		.def_onoff = LED_ON,
+		.active_low = 1,
+	},
+	[PWR_GRE_LED] = {
+		.name = "PWRG LED",
+		.gpio_nr = 42,
+		.dir = 0,
+		.is_led = 1,
+		.def_onoff = LED_OFF,
+		.active_low = 1,
+	},
+	[PWR_RED_LED] = {
+		.name = "PWR LED",
+		.gpio_nr = 45,
+		.dir = 0,
+		.is_led = 1,
+		.def_onoff = LED_OFF,
+		.active_low = 1,
+	},
+	[LAN1_LED] = {
+		.name = "LAN1 LED",
+		.gpio_nr = 52,
+		.dir = 0,
+		.is_led = 1,
+		.def_onoff = LED_OFF,
+		.active_low = 0,
+	},
+	[LAN2_LED] = {
+		.name = "LAN2 LED",
+		.gpio_nr = 61,
+		.dir = 0,
+		.is_led = 1,
+		.def_onoff = LED_OFF,
+		.active_low = 0,
+	},
+	[LAN3_LED] = {
+		.name = "LAN3 LED",
+		.gpio_nr = 68,
+		.dir = 0,
+		.is_led = 1,
+		.def_onoff = LED_OFF,
+		.active_low = 0,
+	},
 #else
 #error Define GPIO table!!!
 #endif
@@ -274,6 +390,31 @@ static unsigned int get_gpio_active_low(enum gpio_idx_e gpio_idx)
  * 		0: output
  * 		1: input.
  */
+void ipq40xx_set_gpio_dir_pure(int gpio_nr, int dir)
+{
+	gpio_func_data_t data = {
+		.func = 0,		/* GPIO_IN_OUT */
+		.pull = GPIO_NO_PULL,
+		.drvstr = GPIO_8MA,
+	};
+
+	data.gpio = gpio_nr;
+	if (!dir) {
+		data.out = GPIO_OUTPUT;
+		data.oe = GPIO_OE_ENABLE;
+	} else {
+		data.out = GPIO_INPUT;
+		data.oe = GPIO_OE_DISABLE;
+	}
+	qca_configure_gpio(&data, 1);
+}
+
+/* Set GPIO# as GPIO PIN and direction.
+ * @gpio_nr:	GPIO#
+ * @dir:	GPIO direction
+ * 		0: output
+ * 		1: input.
+ */
 static void __ipq40xx_set_gpio_dir(enum gpio_idx_e gpio_idx, int dir)
 {
 	struct gpio_s *g = get_gpio_def(gpio_idx);
@@ -303,6 +444,32 @@ static void __ipq40xx_set_gpio_dir(enum gpio_idx_e gpio_idx, int dir)
  * 		0: low-level voltage
  * 		1: high-level voltage
  */
+void ipq40xx_set_gpio_pin_pure(int gpio_nr, int val)
+{
+	uint32_t addr, reg, mask;
+
+	addr = GPIO_IN_OUT_ADDR(gpio_nr);
+	reg = readl(addr);
+
+	mask = 1U << GPIO_OUT_BIT;
+	if (!val) {
+		/* output 0 */
+		reg &= ~mask;
+	} else {
+		/* output 1 */
+		reg |= mask;
+	}
+
+	writel(reg, addr);
+}
+
+
+/* Set raw value to GPIO#
+ * @gpio_nr:	GPIO#
+ * @val:	GPIO direction
+ * 		0: low-level voltage
+ * 		1: high-level voltage
+ */
 static void __ipq40xx_set_gpio_pin(enum gpio_idx_e gpio_idx, int val)
 {
 	struct gpio_s *g = get_gpio_def(gpio_idx);
@@ -324,6 +491,22 @@ static void __ipq40xx_set_gpio_pin(enum gpio_idx_e gpio_idx, int val)
 	}
 
 	writel(reg, addr);
+}
+
+/* Read raw value of GPIO#
+ * @gpio_nr:	GPIO#
+ * @return:
+ * 		0: low-level voltage
+ * 		1: high-level voltage
+ */
+int ipq40xx_get_gpio_pin_pure(int gpio_nr)
+{
+	uint32_t addr, reg;
+
+	addr = GPIO_IN_OUT_ADDR(gpio_nr);
+	reg = readl(addr) && (1 << GPIO_IN_BIT);
+
+	return !!reg;
 }
 
 /* Read raw value of GPIO#
@@ -425,7 +608,7 @@ void led_init(void)
 
 #if defined(CONFIG_HAVE_SOFT_SPI)
 #if defined(RT4GAC53U)
-	soft_spi_xfer(0xfffe, 16);
+	soft_spi_xfer(0xffee, 16);
 #endif
 #endif
 }
@@ -435,6 +618,21 @@ void gpio_init(void)
 	printf("ASUS %s gpio init : wps / reset pin\n", model);
 	__ipq40xx_set_gpio_dir(WPS_BTN, 1);
 	__ipq40xx_set_gpio_dir(RST_BTN, 1);
+#if defined(VZWAC1300)
+	ipq40xx_set_gpio_dir_pure(5, 0);
+	ipq40xx_set_gpio_pin_pure(5, 1); // pull high GPIO 5
+	udelay(3000);
+	ipq40xx_set_gpio_dir_pure(3, 0);
+	ipq40xx_set_gpio_dir_pure(4, 1);
+#elif defined(MAPAC1300)
+	ipq40xx_set_gpio_dir_pure(3, 0);
+	ipq40xx_set_gpio_dir_pure(4, 1);
+	ipq40xx_set_gpio_dir_pure(5, 0);
+	ipq40xx_set_gpio_pin_pure(5, 0); // keep HW LED control enable
+//printf("VVVV:nr 3:%d\n",ipq40xx_get_gpio_pin_pure(3));
+//printf("VVVV:nr 4:%d\n",ipq40xx_get_gpio_pin_pure(4));
+//printf("VVVV:nr 5:%d\n",ipq40xx_get_gpio_pin_pure(5));
+#endif
 }
 
 unsigned long DETECT(void)
@@ -467,7 +665,7 @@ void power_led_on(void)
 
 #if defined(CONFIG_HAVE_SOFT_SPI)
 #if defined(RT4GAC53U)
-	soft_spi_xfer(0xfffe, 16);
+	soft_spi_xfer(0xffee, 16);
 #endif
 #endif
 }
@@ -478,7 +676,7 @@ void power_led_off(void)
 
 #if defined(CONFIG_HAVE_SOFT_SPI)
 #if defined(RT4GAC53U)
-	soft_spi_xfer(0xffff, 16);
+	soft_spi_xfer(0xffef, 16);
 #endif
 #endif
 }
@@ -511,7 +709,7 @@ void leds_on(void)
 
 #if defined(CONFIG_HAVE_SOFT_SPI)
 #if defined(RT4GAC53U)
-	soft_spi_xfer(0x0fc, 16);
+	soft_spi_xfer(0x0ec, 16);
 #endif
 #endif
 }
@@ -543,7 +741,7 @@ void leds_off(void)
 
 #if defined(CONFIG_HAVE_SOFT_SPI)
 #if defined(RT4GAC53U)
-	soft_spi_xfer(0xffff, 16);
+	soft_spi_xfer(0xffef, 16);
 #endif
 #endif
 }
@@ -564,7 +762,7 @@ void all_leds_on(void)
 
 #if defined(CONFIG_HAVE_SOFT_SPI)
 #if defined(RT4GAC53U)
-	soft_spi_xfer(0x0fc, 16);
+	soft_spi_xfer(0x0ec, 16);
 #endif
 #endif
 }
@@ -584,7 +782,7 @@ void all_leds_off(void)
 
 #if defined(CONFIG_HAVE_SOFT_SPI)
 #if defined(RT4GAC53U)
-	soft_spi_xfer(0xffff, 16);
+	soft_spi_xfer(0xffef, 16);
 #endif
 #endif
 }

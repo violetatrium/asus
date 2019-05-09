@@ -136,18 +136,6 @@ int macronix_verify_ecc(u8 status)
 		return 0;
 }
 
-int toshiba_verify_ecc(u8 status)
-{
-	int ecc_status = (status & STATUS_ECC_MASK_MACRONIX);
-
-	if (ecc_status == STATUS_ECC_ERROR_MACRONIX)
-		return SPINAND_ECC_ERROR;
-	else if (ecc_status == STATUS_ECC_MASK_MACRONIX)
-		return SPINAND_ECC_CORRECTED;
-	else
-		return 0;
-}
-
 int dummy_verify_ecc(u8 status)
 {
 	return 0;

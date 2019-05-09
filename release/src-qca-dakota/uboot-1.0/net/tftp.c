@@ -15,6 +15,7 @@
 #include <flash.h>
 #endif
 
+DECLARE_GLOBAL_DATA_PTR;
 /* Well known TFTP port # */
 #define WELL_KNOWN_PORT	69
 /* Millisecs to timeout for lost pkt */
@@ -183,6 +184,18 @@ store_block(unsigned block, uchar *src, unsigned len)
 	} else
 #endif /* CONFIG_SYS_DIRECT_FLASH_TFTP */
 	{
+		/*
+		 * The file to be tftp'ed should not overwrite the
+		 * code/stack area
+		 */
+		if (((load_addr + newsize) >= CONFIG_SYS_SDRAM_END) ||
+		    (((load_addr + newsize) >= IPQ_TFTP_MAX_ADDR) &&
+		     ((load_addr + newsize) < CONFIG_TZ_END_ADDR))) {
+			puts("\nError file size too large\n");
+			TftpState = STATE_TOO_LARGE;
+			net_set_state(NETLOOP_FAIL);
+			return;
+		}
 		(void)memcpy((void *)(load_addr + offset), src, len);
 	}
 #ifdef CONFIG_MCAST_TFTP
@@ -771,6 +784,19 @@ void TftpStart(enum proto_t protocol)
 #endif
 	{
 		printf("Load address: 0x%lx\n", load_addr);
+		/*
+		 * Do not load files to the reserved region or the
+		 * region where linux is executed.
+		 */
+		if ((load_addr < CONFIG_SYS_LOAD_ADDR) ||
+		    (load_addr >= CONFIG_SYS_SDRAM_END) ||
+		    ((load_addr >= IPQ_TFTP_MAX_ADDR) &&
+		     (load_addr < CONFIG_TZ_END_ADDR))) {
+			puts("\nError specified load address not allowed\n");
+			TftpState = STATE_TOO_LARGE;
+			net_set_state(NETLOOP_FAIL);
+			return;
+		}
 		puts("Loading: *\b");
 		TftpState = STATE_SEND_RRQ;
 	}

@@ -118,6 +118,7 @@
 			"audio_tx_mclk",
 			"audio_rx_bclk",
 			"audio_rx_mclk";
+		ipq,txmclk-fixed = <0>;
 		status = "disabled";
 	};
 
@@ -224,5 +225,51 @@
 	pcm_lb: pcm_lb@0 {
 		compatible = "qca,ipq40xx-pcm-lb";
 		status = "disabled";
+	};
+
+	snd_934x: sound-tavil {
+		compatible = "qcom,ipq40xx-asoc-snd-tavil";
+		status = "disabled";
+		qcom,model = "ipq40xx-tavil-snd-card";
+		qcom,ext-disp-audio-rx;
+		qcom,wcn-btfm;
+		qcom,mi2s-audio-intf;
+		qcom,auxpcm-audio-intf;
+		qcom,msm-mi2s-master = <1>, <1>, <1>, <1>;
+
+		qcom,audio-routing =
+			      "AIF4 VI", "MCLK",
+			      "RX_BIAS", "MCLK",
+			      "MADINPUT", "MCLK",
+			      "hifi amp", "LINEOUT1",
+			      "hifi amp", "LINEOUT2",
+			      "AMIC1", "MIC BIAS1",
+			      "MIC BIAS1", "Analog Mic1",
+			      "AMIC2", "MIC BIAS1",
+			      "MIC BIAS1", "Analog Mic2",
+			      "AMIC3", "MIC BIAS3",
+			      "MIC BIAS3", "Analog Mic3",
+			      "AMIC4", "MIC BIAS3",
+			      "MIC BIAS3", "Analog Mic4",
+			      "AMIC5", "MIC BIAS4",
+			      "MIC BIAS4", "Analog Mic5",
+			      "AMIC6", "MIC BIAS4",
+			      "MIC BIAS4", "Analog Mic6",
+			      "DMIC0", "MIC BIAS1",
+			      "MIC BIAS1", "Digital Mic0",
+			      "DMIC1", "MIC BIAS1",
+			      "MIC BIAS1", "Digital Mic1",
+			      "DMIC2", "MIC BIAS3",
+			      "MIC BIAS3", "Digital Mic2",
+			      "DMIC3", "MIC BIAS3",
+			      "MIC BIAS3", "Digital Mic3",
+			      "DMIC4", "MIC BIAS4",
+			      "MIC BIAS4", "Digital Mic4",
+			      "DMIC5", "MIC BIAS4",
+			      "MIC BIAS4", "Digital Mic5",
+			      "SpkrLeft IN", "SPK1 OUT",
+			      "SpkrRight IN", "SPK2 OUT";
+
+		qcom,tavil-mclk-clk-freq = <9600000>;
 	};
 };

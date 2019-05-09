@@ -202,9 +202,15 @@ endif
 export MODEL
 endif
 
+ifneq ($(CONFIG_MODEL_SUB),)
+MODEL_SUB = $(subst -,,$(CONFIG_MODEL_SUB))
+export MODEL_SUB
+endif
+
 # use shell to run echo command to strip double-quote character from $(MODEL)
 CPPFLAGS += $(if $(CONFIG_ASUS_PRODUCT),-DASUS_PRODUCT) \
-	$(if $(MODEL),-D$(shell echo $(MODEL)))
+	$(if $(MODEL),-D$(shell echo $(MODEL))) \
+	$(if $(MODEL_SUB),-D$(shell echo $(MODEL_SUB)))
 
 # Enable garbage collection of un-used sections for SPL
 ifeq ($(CONFIG_SPL_BUILD),y)

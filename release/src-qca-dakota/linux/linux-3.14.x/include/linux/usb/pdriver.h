@@ -24,6 +24,7 @@
  */
 struct usb_pdata {
 	unsigned		usb2_susphy_quirk:1;
+	unsigned		usb3_dev_reset_quirk:1;
 
 	struct usb_susphy	*susphy;
 };

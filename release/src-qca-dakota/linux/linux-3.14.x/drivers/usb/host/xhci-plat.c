@@ -130,6 +130,10 @@ static int xhci_plat_probe(struct platform_device *pdev)
 		hcd->susphy = pdata->susphy;
 	}
 
+	if (pdata->usb3_dev_reset_quirk) {
+		hcd->usb3_dev_reset_quirk = pdata->usb3_dev_reset_quirk;
+	}
+
 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
 				driver->description)) {
 		dev_dbg(&pdev->dev, "controller already in use\n");

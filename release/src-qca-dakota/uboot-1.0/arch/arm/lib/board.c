@@ -66,6 +66,9 @@
 #include <linux/mtd/partitions.h>
 #include <ubi_uboot.h>
 #endif
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+#include <leds_lp5523.h>
+#endif
 #endif
 
 #ifdef CONFIG_BITBANGMII
@@ -594,6 +597,11 @@ void init_mac(void)
 #if defined(CONFIG_DUAL_BAND)
 	mac[5] += 4;
 	__call_replace(RAMAC1_OFFSET, mac, sizeof(mac), "init mac2");
+#endif
+
+#if defined(RAMAC2_OFFSET)
+	mac[5] += 4;
+	__call_replace(RAMAC2_OFFSET, mac, sizeof(mac), "init mac3");
 #endif
 
 	__call_replace(0xd188, (unsigned char*) "DB", 2, "init countrycode");
@@ -1354,6 +1362,12 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	disable_all_leds();	/* Inhibit ALL LED, except PWR LED. */
 	leds_off();
 	power_led_on();
+#if defined(CONFIG_HAVE_LP5523_LEDS)
+#if defined(MAPAC1300)
+	ipq40xx_set_gpio_pin_pure(5, 1); // disable hardware LED
+#endif
+	lp5523_leds_proc(LP55XX_INIT_LEDS);
+#endif
 
 	ra_flash_init_layout();
 

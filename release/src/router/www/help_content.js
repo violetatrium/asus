@@ -135,7 +135,11 @@ helpcontent[7] = new Array("",
 							 "<#qis_pppoe_help1#>",
 							 "<#isp_profile#>",
 							 "<#PPPConnection_Authentication_itemdesc#>",
-							 "<#PPPConnection_Authentication_itemdesc2#>");
+							 "<#PPPConnection_Authentication_itemdesc2#>",
+							 "<b>PPP Echo:</b> Use Echo-Request and Echo-Reply message defined in PPP Link Control Protocol (LCP) to test the PPP connection. <b>DNS Probe:</b> Performs a DNS lookup request and resolved IP address to test DNS connection",	//31
+							 "Send an LCP Echo-Request frame to the peer every n seconds.",
+							 "Presume the peer to be dead if n LCP Echo-Requests are sent without receiving a valid LCP Echo-Reply. Use of this option requires a non-zero value for the Echo Interval parameter.",
+"If DNS resolution fails or returns the wrong address to n times, then it is assumed that the internet connection is completely unsuccessful");
 //Firewall
 helpcontent[8] = new Array("",
 						   "<#FirewallConfig_WanLanLog_itemdesc#>",
@@ -162,11 +166,12 @@ helpcontent[11] = new Array("",
 							"<#LANHostConfig_x_NTPServer_itemdesc#>",
 							"<#QIS_pass_desc2#> <#LANHostConfig_x_Password_itemdesc#>",
 							"<#QIS_pass_desc2#> <#File_Pop_content_alert_desc3#>",
-							"This feature allows browser to redirect to failed connection warning page when Internet is down, if disabled warning page would not appear.",	/* untranslated */
-							"To set your clock forward one hour in the spring when DST (Daylight Saving Time) starts",	/* untranslated */
-							"To set your clock back one hour in the fall when DST (Daylight Saving Time) ends",	/* untranslated */
-							"If there is no client connection for more than 1 minute, the PLC will enter sleep mode (power saving). The PLC will not wake up until the client connects. (It takes about ten seconds to wake up the PLC)"	/* untranslated */
-		);
+							"<#Enable_redirect_notice_desc#>",
+							"<#LANHostConfig_x_TimeZone_DSTStart_desc#>",
+							"<#LANHostConfig_x_TimeZone_DSTEnd_desc#>",
+							"For destination IP address, you can:<br/>(a) enter a specific IP address, such as \"192.168.1.2\"<br/>(b) enter IP addresses within one subnet or within the same IP pool, such as \"192.168.1.0/24\"",	/* untranslated */
+							"This feature allows you to restrict only specified IP address could access the wireless router via \"Web UI\" / \"SSH\" / \"Telnet\" from WAN(if Enabled) or LAN side(Telnet LAN only).",		/* untranslated */
+							"<#usb_HDD_Hibernation_Desc#>");
 //Log
 helpcontent[12] = new Array("",
 							"<#General_x_SystemUpTime_itemdesc#>",
@@ -220,7 +225,7 @@ helpcontent[19] = new Array("",
 // QoS
 helpcontent[20] = new Array("",
 							"",
-							'<#BM_manual_link_speed_desc#>',
+							'<#EzQoS_bandwidth_note1#>',
 							"<#min_bound_desc#>",
 							"<#max_bound_desc#>",
 							"<#bound_zero_desc#>",
@@ -321,3 +326,52 @@ helpcontent[29] = new Array("",
 helpcontent[30] = new Array("",
 							"Send alert before monthly alert is reached",/*untranslated*/
 							"Cut-off internet if monthly limit is reached");/*untranslated*/
+
+//Captive portal
+helpcontent[31] = new Array("",
+							"The Wi-Fi and authentication session will be disconnected if user does not process within the defined Idle time.",/*untranslated*/
+							"The Wi-Fi and Internet connection will be disconnected after a specified period of inactivity.",/*untranslated*/
+							"The Wi-Fi and Internet connection will be disconnected if the defined Internet session time expired.",/*untranslated*/
+							"The NAS ID is string on RADIUS attribute 32, which allows captive portal to send authentication request to RADIUS server for applying different policy of user group.Then, the RADIUS server can send a customized authentication response base on the received NAS ID for the captive portal. To enable the features, you must configure NAS ID policy on RADIUS server correspondingly.",/*untranslated*/
+							"Enter a whitelist URL, also known as walled garden.\nNote: Guest user can fetch the whitelist web content under the domain name without any authentication."/*untranslated*/
+							);
+
+//VPN Fusion
+helpcontent[32] = new Array("",
+							"<#VPN_Fusion_Default_Cconnection#>",
+							"Enable this option allows VPN clients to access the subnet of your LAN",/*untranslated*/
+							"Enable this option allows VPN clients use the Internet from your router instead of the one at their location.",/*untranslated*/
+							"Virtual network device type. TUN devices encapsulate IPv4 or IPv6 (OSI Layer 3) while TAP devices encapsulate Ethernet 802.3 (OSI Layer 2).",/*untranslated*/
+							"Choose the communicating protocol with remote host.",/*untranslated*/
+							"Set the port number to bind. The current default of 1194 represents the official IANA port number assignment for OpenVPN.",/*untranslated*/
+							"<b>TLS</b>: OpenVPN runs in server mode and SSL/TLS authentication will be used;<br> <b>Static Key</b>: OpenVPN runs in P2P mode.",/*untranslated*/
+							"The bits size of automatically generated certificate.",/*untranslated*/
+							"Use username/password only allows client connect to server without certification and authentication by username/password. Be aware that using this directive is less secure than requiring certificates.",/*untranslated*/
+							"Add an additional layer of HMAC authentication on top of the TLS control channel to protect against DoS attacks. An OpenVPN static key will be used.",/*untranslated*/	//10
+							"This directive will set up an OpenVPN server which will allocate addresses to clients out of the given network/netmask. The server itself will take the \".1\" address of the given network for use as the server-side end‐point of the local TUN/TAP interface.",/*untranslated*/
+							"The IP address of the local and remote VPN endpoint in p2p mode.",/*untranslated*/
+							"<b>Yes</b>: Use LAN DHCP server to allocate IP address;<br> <b>No</b>: Allocate IP address from the Address Pool",/*untranslated*/
+							"The first address and the last address in the pool to be assigned to clients.",/*untranslated*/							
+							"Response the DNS query from clients.",/*untranslated*/
+							"In server mode, provide DNS information to clients.",/*untranslated*/
+							"The cipher algorithm to encrypt packets in transmission. AES-128-CBC is recommendation.",/*untranslated*/
+							"Use fast LZO compression. It may add up to 1 byte per packet for incompressible data.",/*untranslated*/
+							"This option can be used on both the client and server, and whichever uses the lower value will be the one to trigger the renegotiation. Renegotiate data channel key after n seconds (default=3600), 0 to disable.",/*untranslated*/
+							"When this option is enabled, each client can view the other clients which are currently connected. Otherwise, each client will only see the server.",/*untranslated*/	//20
+							"Only the client in the \"Allowed Clients\" table could be authenticated.",/*untranslated*/
+							"The Username / Common Name(CN) of client certificate.<br> If setting authenticated by username / password only, this field should be the username in the \"Username and Password\" table.",/*untranslated*/
+							"The Network Address of a subnet to generate an internal route to a specific client. This specific client should own this subnet.",/*untranslated*/
+							"The Network Mask of a subnet to generate an internal route to a specific client. This specific client should own this subnet.",/*untranslated*/
+							" If you would like other clients to be able to this specific client's subnet, choose Yes and Enable \"Allow Client <-> Client\".",/*untranslated*/
+							"The message digest algorithm which is used to authenticate packets with HMAC. HMAC usually adds 16 or 20 bytes per packet."/*untranslated*/
+							);
+
+//IPSec
+helpcontent[33] = new Array("",
+							"<#vpn_ipsec_Key_Retries_Hint#>"
+							);
+
+//Feedback
+helpcontent[34] = new Array("",
+							"This feature allows system to capture diagnostic System debug log in the background, duration depends on the “Diagnostic debug log capture duration” option, depends on the option selected, system might transmit single debug log automatically to ASUS Support Team for analysis after capture completed or transmit multiple debug logs over a period of time. Click on the yellow System icon could cancel the debug log capture."/*untranslated*/
+							);

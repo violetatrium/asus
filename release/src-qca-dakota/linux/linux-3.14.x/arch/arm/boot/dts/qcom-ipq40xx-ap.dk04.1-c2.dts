@@ -26,56 +26,48 @@
 				mux_1 {
 					pins = "gpio58", "gpio60", "gpio61", "gpio62";
 					function = "gpio";
-					bias-pull,up;
 					output-high;
 				};
 
 				mux_2 {
 					pins = "gpio54";
 					function = "gpio";
-					bias-pull,up;
 					output-high;
 				};
 
 				mux_3 {
 					pins = "gpio52", "gpio57";
 					function = "gpio";
-					bias-pull,up;
 					output-high;
 				};
 
 				mux_4 {
 					pins = "gpio55";
 					function = "gpio";
-					bias-pull,up;
 					output-high;
 				};
 
 				mux_5 {
 					pins = "gpio56";
 					function = "gpio";
-					bias-pull,up;
 					output-high;
 				};
 
 				mux_6 {
 					pins = "gpio53", "gpio59";
 					function = "gpio";
-					bias-pull,up;
 					output-high;
 				};
 
 				mux_7 {
 					pins = "gpio63";
 					function = "gpio";
-					bias-pull,up;
 					output-high;
 				};
 
 				mux_8 {
 					pins = "gpio48", "gpio49", "gpio50", "gpio51";
 					function = "gpio";
-					bias-pull,up;
 					output-high;
 				};
 			};
@@ -84,49 +76,41 @@
 				mux_1 {
 					pins = "gpio58", "gpio60", "gpio61", "gpio62";
 					function = "audio0";
-					bias-pull,up;
 				};
 
 				mux_2 {
 					pins = "gpio54";
 					function = "audio_spdifout";
-					bias-pull,up;
 				};
 
 				mux_3 {
 					pins = "gpio52", "gpio57";
 					function = "audio1";
-					bias-pull,up;
 				};
 
 				mux_4 {
 					pins = "gpio55";
 					function = "audio_td2";
-					bias-pull,up;
 				};
 
 				mux_5 {
 					pins = "gpio56";
 					function = "audio_td3";
-					bias-pull,up;
 				};
 
 				mux_6 {
 					pins = "gpio53", "gpio59";
 					function = "audio2";
-					bias-pull,up;
 				};
 
 				mux_7 {
 					pins = "gpio63";
 					function = "audio_td1";
-					bias-pull,up;
 				};
 
 				mux_8 {
 					pins = "gpio48", "gpio49", "gpio50", "gpio51";
 					function = "aud_pin";
-					bias-pull,up;
 				};
 			};
 

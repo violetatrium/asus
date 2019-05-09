@@ -464,15 +464,18 @@ EXPORT_SYMBOL_GPL(crypto_alloc_ahash);
 static int ahash_prepare_alg(struct ahash_alg *alg)
 {
 	struct crypto_alg *base = &alg->halg.base;
+	u32 nosupp_sg;
 
 	if (alg->halg.digestsize > PAGE_SIZE / 8 ||
 	    alg->halg.statesize > PAGE_SIZE / 8 ||
 	    alg->halg.statesize == 0)
 		return -EINVAL;
 
+	nosupp_sg = (base->cra_flags & CRYPTO_ALG_NOSUPP_SG);
 	base->cra_type = &crypto_ahash_type;
 	base->cra_flags &= ~CRYPTO_ALG_TYPE_MASK;
 	base->cra_flags |= CRYPTO_ALG_TYPE_AHASH;
+	base->cra_flags |= nosupp_sg;
 
 	return 0;
 }

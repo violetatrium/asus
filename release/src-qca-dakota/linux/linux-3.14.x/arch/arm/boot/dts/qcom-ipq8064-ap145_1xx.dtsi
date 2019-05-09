@@ -266,6 +266,16 @@
 					bias-disable;
 				};
 			};
+
+			leds_pins: leds_pins {
+				mux {
+					pins = "gpio23", "gpio26", "gpio33";
+					function = "gpio";
+					drive-strength = <2>;
+					bias-pull-down;
+					output-low;
+				};
+			};
 		};
 
 		gsbi@16300000 {
@@ -370,10 +380,16 @@
 
 		usb30@0 {
 			status = "ok";
+			dwc3@11000000 {
+				usb3_dev_reset_quirk;
+			};
 		};
 
 		usb30@1 {
 			status = "ok";
+			dwc3@10000000 {
+				usb3_dev_reset_quirk;
+			};
 		};
 
 		gpio_keys {
@@ -392,6 +408,30 @@
 				gpios = <&qcom_pinmux 22 GPIO_ACTIVE_LOW>;
 				linux,input-type = <1>;
 				debounce-interval = <60>;
+			};
+		};
+
+		leds {
+			compatible = "gpio-leds";
+			pinctrl-0 = <&leds_pins>;
+			pinctrl-names = "default";
+
+			led@23 {
+				label = "status_led_pass";
+				gpios = <&qcom_pinmux 23 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+
+			led@26 {
+				label = "sata_led";
+				gpios = <&qcom_pinmux 26 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+
+			led@33 {
+				label = "status_led_fail";
+				gpios = <&qcom_pinmux 33 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
 			};
 		};
 
@@ -462,6 +502,7 @@
 			qcom,ipv4-enabled;
 			qcom,ipv6-enabled;
 			qcom,l2tpv2-enabled;
+			qcom,gre-enabled;
 			qcom,portid-enabled;
 			qcom,pppoe-enabled;
 			qcom,pptp-enabled;

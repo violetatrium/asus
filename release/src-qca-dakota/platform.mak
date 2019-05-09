@@ -45,12 +45,10 @@ define platformRouterOptions
 	if [ "$(QCA)" = "y" ]; then \
 		sed -i "/RTCONFIG_QCA\>/d" $(1); \
 		echo "RTCONFIG_QCA=y" >>$(1); \
-		if [ "$(RTAC58U)" = "y" ] || [ "$(RTAC82U)" = "y" ] ; then \
-			sed -i "/RTCONFIG_QCA_ARM/d" $(1); \
-			echo "RTCONFIG_QCA_ARM=y" >>$(1); \
-			sed -i "/RTCONFIG_32BYTES_ODMPID/d" $(1); \
-			echo "RTCONFIG_32BYTES_ODMPID=y" >>$(1); \
-		fi; \
+		sed -i "/RTCONFIG_QCA_ARM/d" $(1); \
+		echo "RTCONFIG_QCA_ARM=y" >>$(1); \
+		sed -i "/RTCONFIG_32BYTES_ODMPID/d" $(1); \
+		echo "RTCONFIG_32BYTES_ODMPID=y" >>$(1); \
 		if [ "$(RT4GAC53U)" = "y" ]; then \
 			sed -i "/RTCONFIG_LEDS_CLASS/d" $(1); \
 			echo "RTCONFIG_LEDS_CLASS=y" >>$(1); \
@@ -63,15 +61,23 @@ define platformRouterOptions
 			sed -i "/RTCONFIG_FITFDT/d" $(1); \
 			echo "RTCONFIG_FITFDT=y" >>$(1); \
 		fi; \
+		if [ "$(QCA_VAP_LOCALMAC)" = "y" ]; then \
+			sed -i "/RTCONFIG_QCA_VAP_LOCALMAC/d" $(1); \
+			echo "RTCONFIG_QCA_VAP_LOCALMAC=y" >>$(1); \
+		fi; \
 		if [ "$(RTAC82U)" = "y" ] ; then \
 			sed -i "/RTCONFIG_PCIE_QCA9984/d" $(1); \
 			echo "RTCONFIG_PCIE_QCA9984=y" >>$(1); \
 		fi; \
-		if [ "$(MAKE_HIVEDOT)" = "y" ] || [ "$(MAKE_HIVESPOT)" = "y" ] ; then \
-			sed -i "/RTCONFIG_HIVE_BLUEZ/d" $(1); \
-			echo "RTCONFIG_HIVE_BLUEZ=y" >>$(1); \
+		if [ "$(MAPAC3000)" = "y" ] ; then \
+			sed -i "/RTCONFIG_PCIE_QCA9984/d" $(1); \
+			echo "RTCONFIG_PCIE_QCA9984=y" >>$(1); \
+			sed -i "/RTCONFIG_HAS_5G_2/d" $(1); \
+			echo "RTCONFIG_HAS_5G_2=y" >>$(1); \
 		fi; \
-		if [ "$(MAKE_HIVESPOT)" = "y" ] ; then \
+		if [ "$(MAPAC2200)" = "y" ] ; then \
+			sed -i "/RTCONFIG_HAS_5G_2/d" $(1); \
+			echo "RTCONFIG_HAS_5G_2=y" >>$(1); \
 			sed -i "/RTCONFIG_PCIE_QCA9888/d" $(1); \
 			echo "RTCONFIG_PCIE_QCA9888=y" >>$(1); \
 		fi; \
@@ -113,6 +119,10 @@ define platformKernelConfig
 	if [ "$(QCA)" = "y" ]; then \
 		sed -i "/CONFIG_RTAC55U/d" $(1); \
                 echo "# CONFIG_RTAC55U is not set" >>$(1); \
+		if [ "$(MAPAC1300)" = "y" ] || [ "$(MAPAC2200)" = "y" ] || [ "$(VZWAC1300)" = "y" ]; then \
+			sed -i "/CONFIG_BRIDGE_NETFILTER/d" $(1); \
+			echo "CONFIG_BRIDGE_NETFILTER=y" >>$(1); \
+		fi; \
 		if [ "$(CONFIG_LINUX30)" = "y" ]; then \
 			if [ "$(BOOT_FLASH_TYPE)" = "SPI" ] ; then \
 				sed -i "/CONFIG_MTD_MSM_NAND\>/d" $(1); \
@@ -121,7 +131,7 @@ define platformKernelConfig
 				echo "CONFIG_MTD_M25P80=y" >> $(1); \
 				sed -i "/CONFIG_SPI_QUP\>/d" $(1); \
 				echo "CONFIG_SPI_QUP=y" >> $(1); \
-				if [ "$(RTAC58U)" = "y" ] || [ "$(RT4GAC53U)" = "y" ] ; then \
+				if [ "$(RTAC58U)" = "y" ] || [ "$(RT4GAC53U)" = "y" ] || [ "$(MAPAC1300)" = "y" ] || [ "$(VZWAC1300)" = "y" ]; then \
 					sed -i "/CONFIG_MTD_SPINAND_MT29F/d" $(1); \
 					echo "CONFIG_MTD_SPINAND_MT29F=y" >>$(1); \
 					sed -i "/CONFIG_MTD_SPINAND_ONDIEECC/d" $(1); \
@@ -130,7 +140,7 @@ define platformKernelConfig
 					echo "CONFIG_MTD_SPINAND_GIGADEVICE=y" >>$(1); \
 				fi; \
 			else \
-				if [ "$(RTAC82U)" = "y" ]; then \
+				if [ "$(RTAC82U)" = "y" ] || [ "$(MAPAC2200)" = "y" ] || [ "$(MAPAC3000)" = "y" ]; then \
 					sed -i "/CONFIG_MTD_MSM_QPIC_NAND/d" $(1); \
 					echo "CONFIG_MTD_MSM_QPIC_NAND=y" >>$(1); \
 				else \
@@ -184,6 +194,7 @@ define platformKernelConfig
 			echo "# CONFIG_LEDS_BD2802 is not set" >>$(1); \
 			echo "# CONFIG_LEDS_LT3593 is not set" >>$(1); \
 			echo "# CONFIG_LEDS_TCA6507 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_TLC591XX is not set" >>$(1); \
 			echo "# CONFIG_LEDS_LM355x is not set" >>$(1); \
 			echo "# CONFIG_LEDS_OT200 is not set" >>$(1); \
 			echo "# CONFIG_LEDS_BLINKM is not set" >>$(1); \
@@ -195,6 +206,106 @@ define platformKernelConfig
 			echo "CONFIG_RTAC82U=y" >>$(1); \
 			sed -i "/CONFIG_NF_CONNTRACK_CHAIN_EVENTS/d" $(1); \
 			echo "CONFIG_NF_CONNTRACK_CHAIN_EVENTS=y" >>$(1); \
+		fi; \
+		if [ "$(MAPAC1300)" = "y" ]; then \
+			sed -i "/CONFIG_MAPAC1300/d" $(1); \
+			echo "CONFIG_MAPAC1300=y" >>$(1); \
+		fi; \
+		if [ "$(MAPAC2200)" = "y" ]; then \
+			sed -i "/CONFIG_MAPAC2200\b/d" $(1); \
+			echo "CONFIG_MAPAC2200=y" >>$(1); \
+		fi; \
+		if [ "$(VZWAC1300)" = "y" ]; then \
+			sed -i "/CONFIG_VZWAC1300/d" $(1); \
+			echo "CONFIG_VZWAC1300=y" >>$(1); \
+		fi; \
+		if [ "$(MAPAC3000)" = "y" ]; then \
+			sed -i "/CONFIG_MAPAC3000/d" $(1); \
+			echo "CONFIG_MAPAC3000=y" >>$(1); \
+		fi; \
+		if [ "$(MAPAC1300)" = "y" ] || [ "$(MAPAC2200)" = "y" ] || [ "$(VZWAC1300)" = "y" ] || [ "$(MAPAC3000)" = "y" ]; then \
+			sed -i "/CONFIG_NF_CONNTRACK_CHAIN_EVENTS/d" $(1); \
+			echo "CONFIG_NF_CONNTRACK_CHAIN_EVENTS=y" >>$(1); \
+		fi; \
+		if [ "$(LP5523)" = "y" ] ; then \
+			sed -i "/CONFIG_NEW_LEDS/d" $(1); \
+			echo "CONFIG_NEW_LEDS=y" >>$(1); \
+			sed -i "/CONFIG_LEDS_CLASS/d" $(1); \
+			echo "CONFIG_LEDS_CLASS=y" >>$(1); \
+			sed -i "/CONFIG_LEDS_LP55XX_COMMON/d" $(1); \
+			echo "CONFIG_LEDS_LP55XX_COMMON=y" >>$(1); \
+			sed -i "/CONFIG_LEDS_LP5523/d" $(1); \
+			echo "CONFIG_LEDS_LP5523=y" >>$(1); \
+			echo "# CONFIG_LEDS_LM3530 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_LM3642 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_GPIO is not set" >>$(1); \
+			echo "# CONFIG_LEDS_LP3944 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_LP5521 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_LP5562 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_LP8501 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_PCA955X is not set" >>$(1); \
+			echo "# CONFIG_LEDS_PCA963X is not set" >>$(1); \
+			echo "# CONFIG_LEDS_PCA9685 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_DAC124S085 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_REGULATOR is not set" >>$(1); \
+			echo "# CONFIG_LEDS_BD2802 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_LT3593 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_TCA6507 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_TLC591XX is not set" >>$(1); \
+			echo "# CONFIG_LEDS_LM355x is not set" >>$(1); \
+			echo "# CONFIG_LEDS_OT200 is not set" >>$(1); \
+			echo "# CONFIG_LEDS_BLINKM is not set" >>$(1); \
+			echo "# CONFIG_LEDS_IPQ40XX is not set" >>$(1); \
+			echo "# CONFIG_LEDS_TRIGGERS is not set" >>$(1); \
+		fi; \
+		if [ "$(BT_CONN)" = "y" ] ; then \
+			sed -i "/CONFIG_BT/d" $(1); \
+			echo "CONFIG_BT=y" >>$(1); \
+			sed -i "/CONFIG_BT_HCIBTUSB/d" $(1); \
+			if [ "$(MAPAC3000)" = "y" ]; then \
+				echo "# CONFIG_BT_HCIBTUSB is not set" >>$(1); \
+			else \
+				echo "CONFIG_BT_HCIBTUSB=m" >>$(1); \
+			fi; \
+			sed -i "/CONFIG_BT_RFCOMM/d" $(1); \
+			echo "CONFIG_BT_RFCOMM=y" >>$(1); \
+			sed -i "/CONFIG_BT_RFCOMM_TTY/d" $(1); \
+			echo "CONFIG_BT_RFCOMM_TTY=y" >>$(1); \
+			sed -i "/CONFIG_BT_BNEP/d" $(1); \
+			echo "CONFIG_BT_BNEP=y" >>$(1); \
+			sed -i "/CONFIG_BT_BNEP_MC_FILTER/d" $(1); \
+			echo "CONFIG_BT_BNEP_MC_FILTER=y" >>$(1); \
+			sed -i "/CONFIG_BT_BNEP_PROTO_FILTER/d" $(1); \
+			echo "CONFIG_BT_BNEP_PROTO_FILTER=y" >>$(1); \
+			sed -i "/CONFIG_BT_HCIUART/d" $(1); \
+			if [ "$(MAPAC3000)" = "y" ]; then \
+				echo "CONFIG_BT_HCIUART=y" >>$(1); \
+			else \
+				echo "# CONFIG_BT_HCIUART is not set" >>$(1); \
+			fi; \
+			echo "# CONFIG_BT_HCIUART_H4 is not set" >>$(1); \
+			sed -i "/CONFIG_BT_HCIUART_BCSP/d" $(1); \
+			echo "# CONFIG_BT_HCIUART_BCSP is not set" >>$(1); \
+			sed -i "/CONFIG_BT_HCIBCM203X/d" $(1); \
+			echo "# CONFIG_BT_HCIBCM203X is not set" >>$(1); \
+			sed -i "/CONFIG_BT_HCIBPA10X/d" $(1); \
+			echo "# CONFIG_BT_HCIBPA10X is not set" >>$(1); \
+			sed -i "/CONFIG_BT_HCIBFUSB/d" $(1); \
+			echo "# CONFIG_BT_HCIBFUSB is not set" >>$(1); \
+			sed -i "/CONFIG_BT_HCIUART_ATH3K/d" $(1); \
+			echo "# CONFIG_BT_HCIUART_ATH3K is not set" >>$(1); \
+			sed -i "/CONFIG_BT_ATH3K/d" $(1); \
+			if [ "$(MAPAC3000)" = "y" ]; then \
+				echo "# CONFIG_BT_ATH3K is not set" >>$(1); \
+			else \
+				echo "CONFIG_BT_ATH3K=m" >>$(1); \
+			fi; \
+			echo "# CONFIG_BT_HCIUART_LL is not set" >>$(1); \
+			echo "# CONFIG_BT_HCIUART_3WIRE is not set" >>$(1); \
+			sed -i "/CONFIG_BT_HCIVHCI/d" $(1); \
+			echo "# CONFIG_BT_HCIVHCI is not set" >>$(1); \
+			echo "# CONFIG_BT_MRVL is not set" >>$(1); \
+			echo "# CONFIG_BTRFS_FS is not set" >>$(1); \
 		fi; \
 		if [ "$(IPQ40XX)" = "y" ]; then \
 			if [ "$(HFS)" = "open" ]; then \

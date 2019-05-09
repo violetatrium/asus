@@ -49,12 +49,12 @@
 				mux_1 {
 					pins = "gpio53";
 					function = "mdio1";
-					bias-bus-hold;
+					bias-pull-up;
 				};
 				mux_2 {
 					pins = "gpio52";
 					function = "mdc";
-					bias-bus-hold;
+					bias-pull-up;
 				};
 			};
 
@@ -75,12 +75,9 @@
 			};
 
 			wps_pins: wps_pinmux {
-				/* In ipq40xx, gpio config 0x2 corresponds to
-				 * internal pull up. In pinctrl driver,
-				 * bias-bus-hold corresponds to 0x2 */
 				mux {
 					pins = "gpio63";
-					bias-bus-hold;
+					bias-pull-up;
 				};
 			};
 		};

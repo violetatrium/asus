@@ -1240,3 +1240,28 @@ config VEXPRESS_CONFIG
 	help
 	  Platform configuration infrastructure for the ARM Ltd.
 	  Versatile Express.
+
+
+config WCD9XXX_CODEC_UTIL
+	tristate "WCD9XXX Codec Utils"
+	select MFD_CORE
+	help
+	  WCD9XXX Util driver provides APIs for WCD drivers to reset,
+	  suspend/resume, regmap bus callback functions and read/write
+	  functions. This driver also hides the underlying bus related
+	  functionalities.
+
+config WCD934X_CODEC
+	tristate "WCD934X Codec"
+	select SOUNDWIRE_WCD_CTRL
+	select MFD_CORE
+	select WCD9XXX_CODEC_UTIL
+	select MSM_CDC_SUPPLY
+	select MSM_CDC_PINCTRL
+	select PINCTRL_WCD
+	help
+	  Enables the WCD9xxx codec core driver. The core driver provides
+	  read/write capability to registers which are part of the
+	  WCD934X core and gives the ability to use the WCD934X codec.
+	  The WCD934X codec supports either I2C/I2S or Slimbus for
+	  control and data exchange with master processor.

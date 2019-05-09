@@ -971,6 +971,14 @@ msm_spi_bam_begin_transfer(struct msm_spi *dd)
 	n_words_xfr = DIV_ROUND_UP(rx_bytes_to_recv,
 				dd->bytes_per_word);
 
+	if (dd->dma_pipe_connect == false) {
+		dd->dma_pipe_connect = true;
+		msm_spi_bam_pipe_connect(dd, &dd->bam.prod,
+				&dd->bam.prod.config);
+		msm_spi_bam_pipe_connect(dd, &dd->bam.cons,
+				&dd->bam.cons.config);
+	}
+
 	msm_spi_set_mx_counts(dd, n_words_xfr);
 	ret = msm_spi_set_state(dd, SPI_OP_STATE_RUN);
 	if (ret < 0) {
@@ -1828,6 +1836,8 @@ error:
 
 static void reset_core(struct msm_spi *dd)
 {
+	u32 spi_ioc;
+
 	msm_spi_register_init(dd);
 	/*
 	 * The SPI core generates a bogus input overrun error on some targets,
@@ -1836,9 +1846,13 @@ static void reset_core(struct msm_spi *dd)
 	 * bit.
 	 */
 	msm_spi_enable_error_flags(dd);
-
-	writel_relaxed(SPI_IO_C_NO_TRI_STATE, dd->base + SPI_IO_CONTROL);
 	msm_spi_set_state(dd, SPI_OP_STATE_RESET);
+
+	spi_ioc = SPI_IO_C_NO_TRI_STATE;
+	if (dd->cur_msg->spi->mode & SPI_CPOL)
+		spi_ioc |= SPI_IO_C_CLK_IDLE_HIGH;
+
+	writel_relaxed(spi_ioc, dd->base + SPI_IO_CONTROL);
 }
 
 static void put_local_resources(struct msm_spi *dd)
@@ -1942,12 +1956,6 @@ static int msm_spi_transfer_one_message(struct spi_master *master,
 	}
 
 	reset_core(dd);
-	if (dd->use_dma) {
-		msm_spi_bam_pipe_connect(dd, &dd->bam.prod,
-				&dd->bam.prod.config);
-		msm_spi_bam_pipe_connect(dd, &dd->bam.cons,
-				&dd->bam.cons.config);
-	}
 
 	if (dd->suspended || !msm_spi_is_valid_state(dd)) {
 		dev_err(dd->dev, "%s: SPI operational state not valid\n",
@@ -1974,7 +1982,8 @@ static int msm_spi_transfer_one_message(struct spi_master *master,
 	 * different context since we're running in the spi kthread here) to
 	 * prevent race conditions between us and any other EE's using this hw.
 	 */
-	if (dd->use_dma) {
+	if (dd->dma_pipe_connect == true) {
+		dd->dma_pipe_connect = false;
 		msm_spi_bam_pipe_disconnect(dd, &dd->bam.prod);
 		msm_spi_bam_pipe_disconnect(dd, &dd->bam.cons);
 	}
@@ -2385,7 +2394,6 @@ struct msm_spi_dt_to_pdata_map {
 	int                          default_val;
 };
 
-extern char mid_str[];
 static int msm_spi_dt_to_pdata_populate(struct platform_device *pdev,
 					struct msm_spi_platform_data *pdata,
 					struct msm_spi_dt_to_pdata_map  *itr)
@@ -2398,8 +2406,6 @@ static int msm_spi_dt_to_pdata_populate(struct platform_device *pdev,
 		case DT_GPIO:
 			ret = of_get_named_gpio(node, itr->dt_name, 0);
 			if (ret >= 0) {
-				if (mid_str[0] && strcmp(mid_str, "Hydra")==0 && strcmp(itr->dt_name, "qcom,gpio-cs1")==0)
-					ret = 0;  // Hydra cs1 GPIO is 0
 				*((int *) itr->ptr_data) = ret;
 				ret = 0;
 			}

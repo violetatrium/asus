@@ -53,18 +53,18 @@
 
 #ifdef CONFIG_SYSCTL
 static struct ctl_table_header *brnf_sysctl_header;
-static int brnf_call_iptables __read_mostly = 1;
-static int brnf_call_ip6tables __read_mostly = 1;
-static int brnf_call_arptables __read_mostly = 1;
-static int brnf_call_custom __read_mostly;
+static int brnf_call_iptables __read_mostly = 0;
+static int brnf_call_ip6tables __read_mostly = 0;
+static int brnf_call_arptables __read_mostly = 0;
+static int brnf_call_custom __read_mostly = 0;
 static int brnf_filter_vlan_tagged __read_mostly = 0;
 static int brnf_filter_pppoe_tagged __read_mostly = 0;
 static int brnf_pass_vlan_indev __read_mostly = 0;
 #else
-#define brnf_call_iptables 1
-#define brnf_call_ip6tables 1
-#define brnf_call_arptables 1
-#define brnf_call_custom 1
+#define brnf_call_iptables 0
+#define brnf_call_ip6tables 0
+#define brnf_call_arptables 0
+#define brnf_call_custom 0
 #define brnf_filter_vlan_tagged 0
 #define brnf_filter_pppoe_tagged 0
 #define brnf_pass_vlan_indev 0
@@ -1037,6 +1037,9 @@ int brnf_sysctl_call_tables(struct ctl_table *ctl, int write,
 	return ret;
 }
 
+#if defined(CONFIG_MAPAC1300) || defined(CONFIG_MAPAC2200) || defined(CONFIG_VZWAC1300)
+char brnf_lan_nic[IFNAMSIZ];
+#endif
 static struct ctl_table brnf_table[] = {
 	{
 		.procname	= "bridge-nf-call-arptables",
@@ -1087,6 +1090,15 @@ static struct ctl_table brnf_table[] = {
 		.mode		= 0644,
 		.proc_handler	= brnf_sysctl_call_tables,
 	},
+#if defined(CONFIG_MAPAC1300) || defined(CONFIG_MAPAC2200) || defined(CONFIG_VZWAC1300)
+	{
+		.procname	= "lan_nic",
+		.data		= &brnf_lan_nic,
+		.maxlen		= sizeof(brnf_lan_nic),
+		.mode		= 0644,
+		.proc_handler	= &proc_dostring,
+	},
+#endif
 	{ }
 };
 #endif

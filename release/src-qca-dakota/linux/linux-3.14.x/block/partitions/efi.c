@@ -110,7 +110,8 @@
  * the partition tables happens after init too.
  */
 static int force_gpt;
-static char saved_rootfs_name[64] __initdata;
+static char saved_rootfs_name[64];
+
 static int __init
 force_gpt_fn(char *str)
 {

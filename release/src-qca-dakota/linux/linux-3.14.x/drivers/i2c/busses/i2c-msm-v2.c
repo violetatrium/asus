@@ -597,7 +597,8 @@ static void i2c_msm_fifo_read_xfer_buf(struct i2c_msm_ctrl *ctrl)
 		if (buf->in_tag.len) {
 			copy_bc = min_t(int, word_bc, buf->in_tag.len);
 
-			memcpy(p_tag_val + buf->in_tag.len, word, copy_bc);
+			memcpy(p_tag_val + buf->in_tag.len, word,
+							(size_t)copy_bc);
 
 			word_idx        += copy_bc;
 			word_bc         -= copy_bc;
@@ -614,7 +615,8 @@ static void i2c_msm_fifo_read_xfer_buf(struct i2c_msm_ctrl *ctrl)
 
 		/* copy bytes from fifo word to user's buffer */
 		copy_bc = min_t(int, word_bc, buf_need_bc);
-		memcpy(msg->buf + buf->byte_idx, word + word_idx, copy_bc);
+		memcpy(msg->buf + buf->byte_idx, word + word_idx,
+							(size_t)copy_bc);
 
 		buf->byte_idx += copy_bc;
 		buf_need_bc   -= copy_bc;

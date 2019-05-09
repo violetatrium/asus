@@ -263,9 +263,6 @@ static const unsigned int sdc3_data_pins[] = { 95 };
 		.intr_polarity_bit = 1,			\
 		.intr_detection_bit = 2,		\
 		.intr_detection_width = 1,		\
-		.extra_val = 0,				\
-		.extra_mask = 0,			\
-		.extra_func = APQ_MUX_NA,		\
 	}
 
 #define SDC_PINGROUP(pg_name, ctl, pull, drv)		\
@@ -292,9 +289,6 @@ static const unsigned int sdc3_data_pins[] = { 95 };
 		.intr_polarity_bit = -1,		\
 		.intr_detection_bit = -1,		\
 		.intr_detection_width = -1,		\
-		.extra_val = 0,				\
-		.extra_mask = 0,			\
-		.extra_func = APQ_MUX_NA,		\
 	}
 
 enum apq8064_functions {
@@ -603,6 +597,7 @@ static const struct msm_pinctrl_soc_data apq8064_pinctrl = {
 	.groups = apq8064_groups,
 	.ngroups = ARRAY_SIZE(apq8064_groups),
 	.ngpios = NUM_GPIO_PINGROUPS,
+	.gpio_pull = &msm_gpio_pull,
 };
 
 static int apq8064_pinctrl_probe(struct platform_device *pdev)

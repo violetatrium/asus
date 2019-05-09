@@ -1,6 +1,15 @@
 #!/bin/sh
+# environment variable: unit - modem unit.
 # echo "This is a script to enable the modem."
 
+
+if [ -z "$unit" ] || [ "$unit" == "0" ]; then
+	prefix="usb_modem_"
+else
+	prefix="usb_modem${unit}_"
+fi
+
+pdp_old=0
 
 modem_enable=`nvram get modem_enable`
 modem_mode=`nvram get modem_mode`
@@ -9,15 +18,15 @@ modem_roaming_mode=`nvram get modem_roaming_mode`
 modem_roaming_isp=`nvram get modem_roaming_isp`
 modem_roaming_imsi=`nvram get modem_roaming_imsi`
 modem_autoapn=`nvram get modem_autoapn`
-modem_auto_spn=`nvram get usb_modem_auto_spn`
-modem_act_path=`nvram get usb_modem_act_path`
-modem_type=`nvram get usb_modem_act_type`
-act_node1="usb_modem_act_int"
-act_node2="usb_modem_act_bulk"
-modem_vid=`nvram get usb_modem_act_vid`
-modem_pid=`nvram get usb_modem_act_pid`
-modem_dev=`nvram get usb_modem_act_dev`
-modem_imsi=`nvram get usb_modem_act_imsi`
+modem_auto_spn=`nvram get ${prefix}auto_spn`
+modem_act_path=`nvram get ${prefix}act_path`
+modem_type=`nvram get ${prefix}act_type`
+act_node1="${prefix}act_int"
+act_node2="${prefix}act_bulk"
+modem_vid=`nvram get ${prefix}act_vid`
+modem_pid=`nvram get ${prefix}act_pid`
+modem_dev=`nvram get ${prefix}act_dev`
+modem_imsi=`nvram get ${prefix}act_imsi`
 modem_pin=`nvram get modem_pincode`
 modem_pdp=`nvram get modem_pdp`
 modem_isp=`nvram get modem_isp`
@@ -52,7 +61,10 @@ _get_wdm_by_usbnet(){
 	i=0
 	while [ $i -lt 5 ]; do
 		ver_head=`echo -n $kernel_version |awk 'BEGIN{FS="."}{print $1}'`
+		ver_2nd=`echo -n $kernel_version |awk 'BEGIN{FS="."}{print $2}'`
 		if [ "$ver_head" -ge "4" ]; then
+			rp2=`readlink -f /sys/class/usbmisc/cdc-wdm$i/device 2>/dev/null`
+		elif [ "$ver_head" -eq "3" ] && [ "$ver_2nd" -ge "10" ]; then # ex: BlueCave
 			rp2=`readlink -f /sys/class/usbmisc/cdc-wdm$i/device 2>/dev/null`
 		else
 			rp2=`readlink -f /sys/class/usb/cdc-wdm$i/device 2>/dev/null`
@@ -213,13 +225,23 @@ _is_Docomo_modem(){
 	echo -n "$ret"
 }
 
+_is_ET128(){
+	ret="0"
+
+	if [ "$modem_vid" == "4817" -a "$modem_pid" == "7433" ]; then
+		ret="1"
+	fi
+
+	echo -n "$ret"
+}
+
 
 if [ "$modem_type" == "" ]; then
 	/usr/sbin/find_modem_type.sh
 
-	modem_type=`nvram get usb_modem_act_type`
+	modem_type=`nvram get ${prefix}act_type`
 	if [ "$modem_type" == "" ]; then
-		echo "Can't get usb_modem_act_type!"
+		echo "Can't get ${prefix}act_type!"
 		exit 1
 	fi
 fi
@@ -230,6 +252,10 @@ if [ "$modem_enable" == "0" ]; then
 elif [ "$modem_enable" == "4" ]; then
 	echo "Running the WiMAX procedure..."
 	exit 0
+fi
+
+if [ "$wandog_interval" == "" -o "$wandog_interval" == "0" ]; then
+	wandog_interval=5
 fi
 
 act_node=
@@ -243,14 +269,14 @@ act_node=
 	act_node=$act_node1
 #fi
 
-echo "VAR: modem_enable($modem_enable) modem_autoapn($modem_autoapn)";
+echo "VAR: modem_enable($modem_enable) modem_autoapn($modem_autoapn) prefix($prefix)";
 echo "     modem_type($modem_type) modem_vid($modem_vid) modem_pid($modem_pid)";
 echo "     modem_isp($modem_isp) modem_apn($modem_apn)";
 
 if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim" -o "$modem_type" == "gobi" ] || [ "$usb_gobi2" == "1" ]; then
 	if [ "$modem_type" == "gobi" ]; then
 		/usr/sbin/modem_status.sh imsi
-		target=`nvram get usb_modem_act_imsi |cut -c '1-5' 2>/dev/null`
+		target=`nvram get ${prefix}act_imsi |cut -c '1-5' 2>/dev/null`
 		val="24405,24421"
 		at_ret=`/usr/sbin/modem_at.sh '$NV65602' 2>&1 |grep "$val"`
 		if [ "$target" == "24421" ]; then # Let the old SIM: Saunalahti to be with Elisa in Finland.
@@ -277,8 +303,8 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 		wait_time1=`expr $wandog_interval + $wandog_interval`
 		wait_time=`expr $wait_time1 + $modem_reg_time`
 		nvram set freeze_duck=$wait_time
-		nvram set usb_modem_act_reset=1
-		nvram set usb_modem_act_reset_path="$modem_act_path"
+		nvram set ${prefix}act_reset=1
+		nvram set ${prefix}act_reset_path="$modem_act_path"
 		at_ret=`/usr/sbin/modem_at.sh '+CFUN=1,1' 2>&1`
 		ret=`echo -n $at_ret |grep "OK" 2>/dev/null`
 		if [ -n "$ret" ]; then
@@ -294,25 +320,25 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 			if [ -n "$modem_act_node" ]; then
 				echo "Reset modem: Fail to reset modem."
 				nvram set modem_act_reset=0
-				nvram set usb_modem_act_reset=0
-				nvram set usb_modem_act_reset_path=""
+				nvram set ${prefix}act_reset=0
+				nvram set ${prefix}act_reset_path=""
 				nvram commit
 				exit 5
 			fi
 
 			echo "Reset modem: wait the modem to wake up..."
 			tries=1
-			reset_flag=`nvram get usb_modem_act_reset`
+			reset_flag=`nvram get ${prefix}act_reset`
 			while [ $tries -le 30 ] && [ "$reset_flag" -ne "2" ]; do
 				echo "Reset modem: wait the modem to wake up...$tries"
 				sleep 1
 
-				reset_flag=`nvram get usb_modem_act_reset`
+				reset_flag=`nvram get ${prefix}act_reset`
 				tries=`expr $tries + 1`
 			done
 
-			nvram set usb_modem_act_reset=0
-			nvram set usb_modem_act_reset_path=""
+			nvram set ${prefix}act_reset=0
+			nvram set ${prefix}act_reset_path=""
 			if [ "$reset_flag" != "2" ]; then
 				echo "Reset modem: modem can't wake up after reset."
 				nvram set modem_act_reset=0
@@ -331,8 +357,8 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 		else
 			echo "Reset modem: Can't reset modem."
 			nvram set modem_act_reset=0
-			nvram set usb_modem_act_reset=0
-			nvram set usb_modem_act_reset_path=""
+			nvram set ${prefix}act_reset=0
+			nvram set ${prefix}act_reset_path=""
 			nvram commit
 			exit 5
 		fi
@@ -341,27 +367,31 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 		nvram commit
 	fi
 
-	/usr/sbin/find_modem_node.sh
+	modem_act_node=`nvram get $act_node`
+	if [ "$modem_act_node" == "" ]; then
+		/usr/sbin/find_modem_node.sh
+	fi
 
 	modem_act_node=`nvram get $act_node`
 	if [ "$modem_act_node" == "" ]; then
-		echo "Reset modem: Can't get usb_modem_act_int."
+		echo "Reset modem: Can't get ${prefix}act_int."
 		exit 2.1
 	else
 		echo "Got the int node: $modem_act_node."
 	fi
 
-	if [ "$modem_enable" != "2" ]; then
+	et128=`_is_ET128`
+	if [ "$modem_enable" != "2" ] && [ "$et128" != "1" ]; then
 		# Set full functionality
 		at_ret=`/usr/sbin/modem_at.sh '+CFUN?' 2>&1`
 
 		if [ "$modem_type" == "gobi" ]; then
 			ret=`echo -n $at_ret |grep "+CFUN: 7" 2>/dev/null`
 			if [ -n "$ret" ]; then
-				reboot_flag=`nvram get usb_modem_act_reboot`
+				reboot_flag=`nvram get ${prefix}act_reboot`
 				if [ "$reboot_flag" != "1" ]; then
 					logger "Detecct the gobi in phone's mode, so reboot again..."
-					nvram set usb_modem_act_reboot=1
+					nvram set ${prefix}act_reboot=1
 					nvram commit
 					sleep 2
 					reboot
@@ -371,7 +401,7 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 					exit 0
 				fi
 			else
-				nvram unset usb_modem_act_reboot
+				nvram unset ${prefix}act_reboot
 				nvram commit
 			fi
 		fi
@@ -407,8 +437,12 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 	# input PIN if need.
 	echo "PIN: detect PIN if it's needed."
 	/usr/sbin/modem_status.sh sim
-	/usr/sbin/modem_status.sh simauth
-	ret=`nvram get usb_modem_act_sim`
+	if [ "$et128" == "1" ]; then
+		sleep 2
+	else
+		/usr/sbin/modem_status.sh simauth
+	fi
+	ret=`nvram get ${prefix}act_sim`
 	if [ "$ret" != "1" ]; then
 		if [ "$ret" == "2" -a "$modem_pin" != "" ]; then
 			echo "Input the PIN code..."
@@ -417,7 +451,7 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 
 			/usr/sbin/modem_status.sh sim
 			/usr/sbin/modem_status.sh simauth
-			ret=`nvram get usb_modem_act_sim`
+			ret=`nvram get ${prefix}act_sim`
 		fi
 
 		if [ "$ret" != "1" ]; then
@@ -430,7 +464,9 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 		if [ "$modem_type" != "gobi" ]; then
 			/usr/sbin/modem_status.sh imsi
 		fi
-		/usr/sbin/modem_status.sh iccid
+		if [ "$et128" != "1" ]; then
+			/usr/sbin/modem_status.sh iccid
+		fi
 
 		# Auto-APN
 		echo "Running autoapn..."
@@ -530,12 +566,13 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 				exit 8
 			fi
 
-			nvram set usb_modem_act_dev=$modem_dev
+			nvram set ${prefix}act_dev=$modem_dev
 			echo "Got the QMI dev: $modem_dev."
 		fi
 
-		wdm=`_get_wdm_by_usbnet $modem_dev`
+		modem_stop.sh
 
+		wdm=`_get_wdm_by_usbnet $modem_dev`
 		echo "QMI($wdm): set the ISP profile."
 		pdp_str=`_get_qmi_pdp_str`
 		echo "$modem_type: set the PDP be $pdp_str."
@@ -546,28 +583,39 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 		#	exit 0
 		#fi
 
-		if [ -n "$modem_user" -o -n "$modem_pass" ]; then
-			case "$modem_authmode" in
-				1) flag_auth="pap" ;;
-				2) flag_auth="chap" ;;
-				3) flag_auth="both" ;;
-				*) flag_auth="none" ;;
-			esac
-			echo "uqmi -d $wdm --keep-client-id wds --start-network \"$modem_apn\" --autoconnect" \
-				${flag_auth:+--auth-type \"$flag_auth\"} \
-				${modem_user:+--username \"$modem_user\"} \
-				${modem_pass:+--password \"$modem_pass\"}
-			uqmi -d $wdm --keep-client-id wds --start-network "$modem_apn" --autoconnect \
-				${flag_auth:+--auth-type "$flag_auth"} \
-				${modem_user:+--username "$modem_user"} \
-				${modem_pass:+--password "$modem_pass"}
+		if [ "$modem_user" != "" -o "$modem_pass" != "" ]; then
+			if [ "$modem_authmode" == "3" ]; then
+				flag_auth="--auth-type both"
+			elif [ "$modem_authmode" == "2" ]; then
+				flag_auth="--auth-type chap"
+			elif [ "$modem_authmode" == "1" ]; then
+				flag_auth="--auth-type pap"
+			else
+				flag_auth="--auth-type none"
+			fi
+
+			if [ "$modem_user" != "" ]; then
+				flag_auth="$flag_auth --username $modem_user"
+			fi
+			if [ "$modem_pass" != "" ]; then
+				flag_auth="$flag_auth --password $modem_pass"
+			fi
+
+			echo "$modem_type: set the flag_auth be \"$flag_auth\"."
+
+			echo "uqmi -d $wdm --keep-client-id wds --start-network --apn \"$modem_apn\" \"$flag_auth\" --ip-family $pdp_str"
+			uqmi -d $wdm --keep-client-id wds --start-network --apn "$modem_apn" "$flag_auth" --ip-family $pdp_str
 		else
-			echo "uqmi -d $wdm --keep-client-id wds --start-network \"$modem_apn\" --autoconnect"
-			uqmi -d $wdm --keep-client-id wds --start-network "$modem_apn" --autoconnect
+			echo "uqmi -d $wdm --keep-client-id wds --start-network --apn \"$modem_apn\" --ip-family $pdp_str"
+			uqmi -d $wdm --keep-client-id wds --start-network --apn "$modem_apn" --ip-family $pdp_str
+		fi
+		if [ "$?" != "0" ]; then
+			echo "QMI($wdm): faile to start the network..."
 		fi
 
+		uqmi -d $wdm --keep-client-id wds --set-autoconnect enabled
 		if [ "$?" != "0" ]; then
-			echo "QMI($wdm): faile to start the network & enable autoconnect..."
+			echo "QMI($wdm): faile to enable autoconnect..."
 		fi
 
 		if [ "$modem_vid" == "4817" -a "$modem_pid" == "5132" ]; then
@@ -575,7 +623,7 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 			exit 0
 
 			echo "Restarting the MT and set it as online mode..."
-			nvram set usb_modem_reset_huawei=1
+			nvram set ${prefix}reset_huawei=1
 			at_ret=`/usr/sbin/modem_at.sh '+CFUN=1,1' 2>&1`
 
 			tries=1
@@ -595,7 +643,7 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 			fi
 
 			echo "Successfull to reset the modem."
-			nvram unset usb_modem_reset_huawei
+			nvram unset ${prefix}reset_huawei
 		fi
 
 		echo "QMI: Successfull to set the ISP profile."
@@ -617,6 +665,8 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 	is_Docomo=`_is_Docomo_modem`
 	if [ "$Dev3G" == "Docomo_dongles" ] || [ "$is_Docomo" == "1" ]; then
 		echo "COPS: Docomo dongles cannot COPS=0, so skip it."
+	elif [ "$et128" == "1" ]; then
+		echo "COPS: Huawei ET128 skip to reset COPS."
 	elif [ "$modem_vid" == "6797" -a "$modem_pid" == "4098" ]; then # BandLuxe C120.
 		echo "COPS: BandLuxe C120 start with CFUN=0, so don't need to unregister the network."
 	elif [ "$modem_vid" == "4817" -a "$modem_pid" == "5382" ]; then # Huawei E3276.
@@ -688,6 +738,8 @@ if [ "$modem_type" == "tty" -o "$modem_type" == "qmi" -o "$modem_type" == "mbim"
 		# check the register state after set COPS.
 		if [ "$Dev3G" == "Docomo_dongles" ] || [ "$is_Docomo" == "1" ]; then
 			echo "COPS: Docomo dongles cannot CGATT=1, so skip it."
+		elif [ "$et128" == "1" ]; then
+			echo "COPS: Huawei ET128 cannot CGATT=1, so skip it."
 		elif [ "$modem_vid" == "4204" -a "$modem_pid" == "14104" ]; then # Pantech UML290VW: VID=0x106c, PID=0x3718
 			echo "COPS: Pantech UML290VW cannot CGATT?, so skip it."
 		else

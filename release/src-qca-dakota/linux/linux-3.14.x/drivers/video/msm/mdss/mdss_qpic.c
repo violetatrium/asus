@@ -11,26 +11,14 @@
  */
 
 #include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/sched.h>
 #include <linux/time.h>
-#include <linux/init.h>
 #include <linux/interrupt.h>
-#include <linux/spinlock.h>
-#include <linux/hrtimer.h>
 #include <linux/clk.h>
 #include <linux/io.h>
-#include <linux/debugfs.h>
 #include <linux/delay.h>
-#include <linux/mutex.h>
-#include <linux/regulator/consumer.h>
-#include <linux/semaphore.h>
-#include <linux/uaccess.h>
-#include <linux/bootmem.h>
 #include <linux/dma-mapping.h>
 
 #include <linux/msm-sps.h>
-#include <linux/msm-bus.h>
 
 #include "mdss_fb.h"
 #include "mdss_qpic.h"
@@ -82,20 +70,6 @@ int qpic_off(struct msm_fb_data_type *mfd)
 	return ret;
 }
 
-static int msm_qpic_bus_set_vote(u32 vote)
-{
-	int ret;
-
-	if (!qpic_res->bus_handle)
-		return 0;
-	ret = msm_bus_scale_client_update_request(qpic_res->bus_handle,
-			vote);
-	if (ret)
-		pr_err("msm_bus_scale_client_update_request() failed, bus_handle=0x%x, vote=%d, err=%d\n",
-			qpic_res->bus_handle, vote, ret);
-	return ret;
-}
-
 static void mdss_qpic_pan_display(struct msm_fb_data_type *mfd)
 {
 
@@ -124,7 +98,6 @@ static void mdss_qpic_pan_display(struct msm_fb_data_type *mfd)
 	else
 		fb_offset = (u32)mfd->fbi->screen_base + offset;
 
-	msm_qpic_bus_set_vote(1);
 	mdss_qpic_panel_on(qpic_res->panel_data, &qpic_res->panel_io);
 	size = fbi->var.xres * fbi->var.yres * bpp;
 
@@ -140,7 +113,6 @@ static void mdss_qpic_pan_display(struct msm_fb_data_type *mfd)
 			 fbi->var.yres - 1, (u32 *)(fb_offset + (size / 2)),
 			 size / 2);
 	}
-	msm_qpic_bus_set_vote(0);
 }
 
 int mdss_qpic_alloc_fb_mem(struct msm_fb_data_type *mfd)
@@ -157,7 +129,6 @@ int mdss_qpic_alloc_fb_mem(struct msm_fb_data_type *mfd)
 		mfd->fbi->fix.smem_start = 0;
 		mfd->fbi->screen_base = NULL;
 		mfd->fbi->fix.smem_len = 0;
-		mfd->iova = 0;
 		return 0;
 	}
 
@@ -191,7 +162,6 @@ int mdss_qpic_alloc_fb_mem(struct msm_fb_data_type *mfd)
 	mfd->fbi->fix.smem_start = qpic_res->fb_phys;
 	mfd->fbi->screen_base = qpic_res->fb_virt;
 	mfd->fbi->fix.smem_len = size;
-	mfd->iova = 0;
 	return 0;
 }
 
@@ -205,11 +175,9 @@ int mdss_qpic_overlay_init(struct msm_fb_data_type *mfd)
 	struct msm_mdp_interface *qpic_interface = &mfd->mdp;
 	qpic_interface->on_fnc = qpic_on;
 	qpic_interface->off_fnc = qpic_off;
-	qpic_interface->do_histogram = NULL;
 	qpic_interface->cursor_update = NULL;
 	qpic_interface->dma_fnc = mdss_qpic_pan_display;
 	qpic_interface->ioctl_handler = NULL;
-	qpic_interface->kickoff_fnc = NULL;
 	return 0;
 }
 
@@ -622,7 +590,7 @@ int mdss_qpic_init(void)
 	if (use_irq && (!qpic_res->irq_requested)) {
 		ret = devm_request_irq(&qpic_res->pdev->dev,
 			qpic_res->irq, qpic_irq_handler,
-			IRQF_DISABLED,	"QPIC", qpic_res);
+			0,	"QPIC", qpic_res);
 		if (ret) {
 			pr_err("qpic request_irq() failed!\n");
 			use_irq = false;
@@ -666,25 +634,6 @@ u32 qpic_read_data(u32 cmd_index, u32 size)
 	return data;
 }
 EXPORT_SYMBOL(qpic_read_data);
-
-static int msm_qpic_bus_register(struct platform_device *pdev)
-{
-	int ret = 0;
-	struct msm_bus_scale_pdata *use_cases;
-
-	use_cases = msm_bus_cl_get_pdata(pdev);
-	if (!use_cases) {
-		pr_err("msm_bus_cl_get_pdata failed\n");
-		return -EINVAL;
-	}
-	qpic_res->bus_handle =
-		msm_bus_scale_register_client(use_cases);
-	if (!qpic_res->bus_handle) {
-		ret = -EINVAL;
-		pr_err("msm_bus_scale_register_client failed\n");
-	}
-	return ret;
-}
 
 static int mdss_qpic_probe(struct platform_device *pdev)
 {
@@ -754,22 +703,16 @@ static int mdss_qpic_probe(struct platform_device *pdev)
 
 	qpic_res->res_init = true;
 
-	mdss_qpic_panel_io_init(pdev, &qpic_res->panel_io);
-
 	rc = mdss_fb_register_mdp_instance(&qpic_interface);
 	if (rc)
 		pr_err("unable to register QPIC instance\n");
 
-	msm_qpic_bus_register(pdev);
 probe_done:
 	return rc;
 }
 
 static int mdss_qpic_remove(struct platform_device *pdev)
 {
-	if (qpic_res->bus_handle)
-		msm_bus_scale_unregister_client(qpic_res->bus_handle);
-	qpic_res->bus_handle = 0;
 	return 0;
 }
 

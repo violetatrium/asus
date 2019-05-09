@@ -86,6 +86,8 @@ struct msm_pingroup {
 	unsigned in_bit:5;
 	unsigned out_bit:5;
 	unsigned od_bit:5;
+	unsigned vm_bit:5;
+	unsigned pull_res:5;
 
 	unsigned intr_enable_bit:5;
 	unsigned intr_status_bit:5;
@@ -97,9 +99,16 @@ struct msm_pingroup {
 	unsigned intr_polarity_bit:5;
 	unsigned intr_detection_bit:5;
 	unsigned intr_detection_width:5;
-	unsigned extra_func;
-	unsigned extra_val;
-	unsigned extra_mask;
+};
+
+/**
+ * struct msm_pinctrl_gpio_pull - pinctrl pull value bit field descriptor
+ */
+struct msm_pinctrl_gpio_pull {
+	unsigned no_pull;
+	unsigned pull_down;
+	unsigned pull_up;
+	unsigned keeper;
 };
 
 /**
@@ -111,6 +120,7 @@ struct msm_pingroup {
  * @groups:     An array describing all pin groups the pin SoC supports.
  * @ngroups:    The numbmer of entries in @groups.
  * @ngpio:      The number of pingroups the driver should expose as GPIOs.
+ * @gpio_pull_val: The pull value bit field descriptor.
  */
 struct msm_pinctrl_soc_data {
 	const struct pinctrl_pin_desc *pins;
@@ -120,7 +130,37 @@ struct msm_pinctrl_soc_data {
 	const struct msm_pingroup *groups;
 	unsigned ngroups;
 	unsigned ngpios;
+	const struct msm_pinctrl_gpio_pull *gpio_pull;
 };
+
+static const struct msm_pinctrl_gpio_pull msm_gpio_pull = {
+	.no_pull = 0,
+	.pull_down = 1,
+	.keeper = 2,
+	.pull_up = 3,
+};
+
+#define DRV_TYPE_D		0
+#define DRV_TYPE_C		1
+#define DRV_TYPE_B		3
+#define DRV_TYPE_A		7
+
+enum drv_cap {
+	DRV_CAP_HIGH,
+	DRV_CAP_HALF,
+	DRV_CAP_QUARTER,
+};
+
+enum pull_res {
+	RES_10_KOHM,
+	RES_1_5_KOHM,
+	RES_35_KOHM,
+	RES_20_KOHM,
+};
+
+#define HP_1_8V		1
+#define HP_2_8V		0
+#define HP_3_3V		0
 
 int msm_pinctrl_probe(struct platform_device *pdev,
 		      const struct msm_pinctrl_soc_data *soc_data);

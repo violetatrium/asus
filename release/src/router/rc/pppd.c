@@ -172,7 +172,12 @@ start_pppd(int unit)
 			fprintf(fp, "-pap\n");
 		}
 
-		if (nvram_match("dslx_transmode", "atm") && nvram_match("dsl0_proto", "pppoa")) {
+		if (nvram_match("dslx_transmode", "atm")
+			&& nvram_match("dsl0_proto", "pppoa")
+#ifdef RTCONFIG_DUALWAN
+			&& get_dualwan_by_unit(unit) == WANS_DUALWAN_IF_DSL
+#endif
+		) {
 			FILE *fp_dsl_mac;
 			char *dsl_mac = NULL;
 			int timeout = 10; /* wait up to 10 seconds */
@@ -367,6 +372,7 @@ start_pppoe_relay(char *wan_if)
 	char *pppoerelay_argv[] = {"/usr/sbin/pppoe-relay",
 		"-C", "br0",
 		"-S", wan_if,
+		nvram_match("hide_relayid","1")?"-H":"",
 		"-F", NULL};
 	pid_t pid;
 	int ret = 0;

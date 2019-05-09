@@ -290,7 +290,7 @@ function gotoHome() {
 		location.href = '/qis/QIS_wireless.htm';
 	}
 	else {
-		parent.location.href = '/index.asp';
+		parent.location.href = "<% abs_index_page(); %>";
 	}
 }
 </script>
@@ -365,10 +365,10 @@ function gotoHome() {
 <div id="showip">
 <fieldset>
 <legend>
-	<#Layer3Forwarding_x_UseStaticIP_itemname#>
+	<#Layer3Forwarding_x_DHCPClient_itemname#>
 	<span id="dhcp_info_radio">
-		<input type="radio" name="x_DHCPClient" class="input" value="0" tabindex="1" onclick="show_dhcpenable(this.value);"><#checkbox_Yes#>
-		<input type="radio" name="x_DHCPClient" class="input" value="1" tabindex="2" onclick="show_dhcpenable(this.value);"><#checkbox_No#>
+		<input type="radio" name="x_DHCPClient" class="input" value="0" tabindex="1" onclick="show_dhcpenable(this.value);"><#checkbox_No#>
+		<input type="radio" name="x_DHCPClient" class="input" value="1" tabindex="2" onclick="show_dhcpenable(this.value);"><#checkbox_Yes#>
 	</span>
 </legend>
 	<table id="tblsetting_2" class="QISform" width="400" border="0" align="center" cellpadding="3" cellspacing="0">
@@ -495,10 +495,10 @@ function gotoHome() {
 <div id="dns_sec">
   <fieldset>
   <legend>
-	  <span id="dns_info_title"><#qis_dns#>:</span>
+	  <span id="dns_info_title"><#IPConnection_x_DNSServerEnable_itemname#>:</span>
 	  <span id="dns_info_radio">
-  		<input type="radio" name="wan_dnsenable_x" value="1" tabindex="6" onclick="show_dnsenable(this.value);" class="input"><#checkbox_Yes#>
-			<input type="radio" name="wan_dnsenable_x" value="0" tabindex="7" onclick="show_dnsenable(this.value);" class="input"><#checkbox_No#>
+  		<input type="radio" name="wan_dnsenable_x" value="1" tabindex="6" onclick="show_dnsenable(this.value);" class="input"><#checkbox_No#>
+		<input type="radio" name="wan_dnsenable_x" value="0" tabindex="7" onclick="show_dnsenable(this.value);" class="input"><#checkbox_Yes#>
 	  </span>
   </legend>
   <table id="tblsetting_4" class="QISform" width="400" border=0 align="center" cellpadding="5" cellspacing="0">

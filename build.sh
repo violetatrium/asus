@@ -25,9 +25,9 @@ else
   exit 2
 fi
 
-if [ "$MODEL" == "asus_map_ac1300" ]; then
-	MODEL="rt-ac58u"
-	fw="release/src-qca-dakota/image/RT-AC58U.trx"
+if [ "$MODEL" == "asus_map_ac1700" ]; then
+	MODEL="rt-ac82u"
+	fw="release/src-qca-dakota/image/RT-AC82U.trx"
 else
 	echo "This model is not supported yet"
 	exit 1
