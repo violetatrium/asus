@@ -1727,8 +1727,8 @@ void init_syspara(void)
 	nvram_set("et1macaddr", macaddr);
 #else
 	//TODO: separate for different chipset solution
-	nvram_set("et0macaddr", macaddr);
-	nvram_set("et1macaddr", macaddr2);
+	nvram_set("et0macaddr", macaddr2);
+	nvram_set("et1macaddr", macaddr);
 #endif
 
 	country_code[0] = '\0';
