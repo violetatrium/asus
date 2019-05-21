@@ -1845,6 +1845,7 @@ function show_top_status(){
 	//var rcno = '<% nvram_get("rcno"); %>';
 	var extendno = '<% nvram_get("extendno"); %>';
 	var FWString = '';
+    var unumver = '<%get_unum_version();%>';
 
 	if(extendno == ""){
 		extendno="0";
@@ -1859,10 +1860,10 @@ function show_top_status(){
 		if(swisscom_support)
 			FWString += '_swisscom';
 
-		showtext(document.getElementById("firmver"), FWString);
+        showtext(document.getElementById("firmver"), FWString + " " + unumver);
 	}
   	else{
-		showtext(document.getElementById("firmver"), swpjverno + '_' + extendno);
+        showtext(document.getElementById("firmver"), swpjverno + '_' + extendno + " " + unumver);
  	}
 	
 	// no_op_mode

@@ -14910,6 +14910,7 @@ struct mime_handler mime_handlers[] = {
 	{ "Nologin.asp", "text/html", no_cache_IE7, do_html_post_and_get, do_ej, NULL },
 	{ "error_page.htm*", "text/html", no_cache_IE7, do_html_post_and_get, do_ej, NULL },
 	{ "blocking.asp", "text/html", no_cache_IE7, do_html_post_and_get, do_ej, NULL },
+    { "provision_info.htm", "text/html", no_cache_IE7, NULL, do_file, NULL },
 #ifdef RTCONFIG_WIFI_SON
 	{ "message.htm", "text/html", no_cache_IE7, do_html_post_and_get, do_ej, NULL },
 #endif
@@ -18965,6 +18966,37 @@ ej_memory_usage(int eid, webs_t wp, int argc, char_t **argv){
 }
 
 static int
+ej_get_unum_version(int eid, webs_t wp, int argc, char_t **argv)
+{
+	char buf[32];
+	FILE *fp;
+	int len;
+
+	fp = fopen("/rom/etc/version", "r");
+	if (fp) {
+		memset(buf, 0, sizeof(buf));
+		len = fread(buf, 1, sizeof(buf), fp);
+		fclose(fp);
+		if (len <= 0){
+			websWrite(wp, "Unum: N/A");
+			return 0;
+		}
+		if (buf[len-1] == '\n') {
+			// New line is an issue
+			buf[len-1] = 0;
+			len--;
+		}
+		fprintf(wp, " Unum: %s", buf);
+	} else {
+		websWrite(wp, "Unum: N/A");
+		return 0;
+	}
+	return 0;
+}
+
+
+
+static int
 ej_cpu_usage(int eid, webs_t wp, int argc, char_t **argv){
 	unsigned long total, user, nice, system, idle, io, irq, softirq;
 	char name[10];
@@ -22174,6 +22206,7 @@ struct ej_handler ej_handlers[] = {
 	{ "dhcpLeaseInfo", ej_dhcpLeaseInfo},
 	{ "dhcpLeaseMacList", ej_dhcpLeaseMacList},
 	{ "IP_dhcpLeaseInfo", ej_IP_dhcpLeaseInfo},
+    { "get_unum_version", ej_get_unum_version},
 //tomato qosvvvvvvvvvvv 2010.08 Viz
 	{ "qrate", ej_qos_packet},
 	{ "ctdump", ej_ctdump},
