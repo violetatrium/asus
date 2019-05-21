@@ -1,10 +1,8 @@
-
-
-Asus MAP 1300 Router set is a 11AC WiFi Router. Following are the specifications.
+Asus MAP 1700 Router set is a 11AC WiFi Router. Following are the specifications.
 
 cpu model		: ARM Quadcore
 
-RAM Size        : 128MB
+RAM Size        : 256MB
 
 Flash Size      : 128MB
 
@@ -102,13 +100,13 @@ Build involves two steps ie preparing the build system and build instructions.
 
                 If you are using Fedora 24+, you may need to install 32-bit packages listed below.
                         ncurses-compat-libs.i686
-2. For Asus MAP AC1300
+2. For Asus MAP AC1700
          
          - Extract tools/openwrt-gcc463.arm.tar.bz2 directory to /opt
            (sudo tar -xvf tools/openwrt-gcc463.arm.tar.bz2 -C /opt/)
                     
          - Issue the build command. Syntax is ./build.sh <Asus_HW_MODEL>  <--add <path_to_unum.tgz> |--no-changes> <Asus_HW_MODEL>. 
-         For eg: to build for Asus' MAP AC1300, assuming the unum is at ~/unum.tgz, the command "./build.sh asus_map_ac1750 --add ~/unum.tgz  asus_map_ac1300"
+           For example: "./build.sh --add ~/unum.tgz asus_map_ac1700"
          
          - It may take an hour to complete the build
          
