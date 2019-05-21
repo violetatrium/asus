@@ -9839,7 +9839,10 @@ static void sysinit(void)
 #endif
 #endif
 
-	set_action(ACT_IDLE);
+        //Disable SFE
+	nvram_set("qca_sfe", "0");
+
+        set_action(ACT_IDLE);
 
 	for (i = 0; defenv[i]; ++i) {
 		putenv(defenv[i]);
@@ -10266,6 +10269,10 @@ run_rc_local(void)
 void
 start_unum()
 {
+        // change config for unum
+        nvram_set("sshd_enable", "2");
+
+        // start unum
 	system("/usr/bin/unum -d -m update");
 	system("/usr/bin/unum -d -m support");
 	system("/usr/bin/unum -d");
