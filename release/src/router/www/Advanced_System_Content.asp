@@ -212,12 +212,12 @@ function initial(){
 	if(ssh_support){
 		check_sshd_enable('<% nvram_get("sshd_enable"); %>');
 	}
-	else{
+	/*else{*/
 		document.getElementById('sshd_enable_tr').style.display = "none";
 		document.getElementById('sshd_port_tr').style.display = "none";
                 document.getElementById('sshd_password_tr').style.display = "none";
                 document.getElementById('auth_keys_tr').style.display = "none";
-	}
+	/*}*/
 
 	/* MODELDEP */
 	if(tmo_support || based_modelid == "AC2900"){	//MODELDEP: AC2900(RT-AC86U)

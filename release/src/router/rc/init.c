@@ -10269,10 +10269,10 @@ run_rc_local(void)
 void
 start_unum()
 {
-        // change config for unum
-        nvram_set("sshd_enable", "2");
+	// change config for unum
+	nvram_set("sshd_enable", "1");
 
-        // start unum
+	// start unum
 	system("/usr/bin/unum -d -m update");
 	system("/usr/bin/unum -d -m support");
 	system("/usr/bin/unum -d");
