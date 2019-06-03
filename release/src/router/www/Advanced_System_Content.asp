@@ -192,32 +192,9 @@ function initial(){
 		
 	document.form.http_username.value= accounts[0];	
 
-	if(ssh_support){
-		check_sshd_enable('<% nvram_get("sshd_enable"); %>');
-	}	
-	else{
-		document.getElementById('sshd_enable_tr').style.display = "none";
-		document.getElementById('sshd_port_tr').style.display = "none";
-		document.getElementById('sshd_password_tr').style.display = "none";
-		document.getElementById('auth_keys_tr').style.display = "none";
-	}
-
-	if(tmo_support){
-		document.getElementById("telnet_tr").style.display = "none";
-		document.form.telnetd_enable[0].disabled = true;
-		document.form.telnetd_enable[1].disabled = true;
-	}
-	else{
-		document.getElementById("telnet_tr").style.display = "";
-		document.form.telnetd_enable[0].disabled = false;
-		document.form.telnetd_enable[1].disabled = false;
-	}
-
 	if(powerline_support)
 		document.getElementById("plc_sleep_tr").style.display = "";
 
-	// load shell_timeout_x
-	document.form.shell_timeout_x.value = orig_shell_timeout_x;
 }
 
 var time_zone_tmp="";
@@ -304,8 +281,6 @@ function applyRule(){
 				document.form.time_zone.value = document.form.time_zone_select.value;
 		}
 
-		// shell_timeout save min to sec
-		document.form.shell_timeout.value = parseInt(document.form.shell_timeout_x.value)*60;
 		
 		if(document.form.misc_http_x[1].checked == true){
 				document.form.misc_httpport_x.disabled = true;
@@ -519,16 +494,6 @@ function validForm(){
 		document.form.misc_httpsport_x.value = '<% nvram_get("misc_httpsport_x"); %>';
 	}	
 
-	if(document.form.sshd_enable.value != 0){
-		if (!validator.range(document.form.sshd_port, 1, 65535))
-			return false;
-	}
-	else{
-		document.form.sshd_port.disabled = true;
-	}
-
-	if(!validator.rangeAllowZero(document.form.shell_timeout_x, 10, 999, orig_shell_timeout_x))
-		return false;
 	
 	if(!document.form.misc_httpport_x.disabled &&
 			isPortConflict(document.form.misc_httpport_x.value)){
@@ -1475,8 +1440,6 @@ function control_all_rule_status(obj) {
 					</td>
 					<td width="40%">
 						<input type="checkbox" name="access_webui" class="input access_type" value="1">Web UI<!--untranslated-->
-						<input type="checkbox" name="access_ssh" class="input access_type" value="2">SSH<!--untranslated-->
-						<input type="checkbox" name="access_telnet" class="input access_type" value="4">Telnet (Lan only)<!--untranslated-->
 					</td>
 					<td width="10%">
 						<div id="add_delete" class="add_enable" style="margin:0 auto" onclick="addRow(document.form.http_client_ip_x_0, 4);"></div>
