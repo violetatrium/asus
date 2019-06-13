@@ -1,5 +1,11 @@
 #!/bin/sh
 
+#MIN-917
+nvram set webs_state_error=1
+echo "---- error 917: router/rom/webs_scripts/ssl_webs_upgrade.sh ----" > /tmp/webs_upgrade.log
+exit 1
+
+
 wget_timeout=`nvram get apps_wget_timeout`
 #wget_options="-nv -t 2 -T $wget_timeout --dns-timeout=120"
 wget_options="-q -t 2 -T $wget_timeout --no-check-certificate"

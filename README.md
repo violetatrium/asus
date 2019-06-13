@@ -1,6 +1,6 @@
 Asus MAP 1700 Router set is a 11AC WiFi Router. Following are the specifications.
 
-cpu model		: ARM Quadcore
+cpu model	: ARM Quadcore
 
 RAM Size        : 256MB
 
