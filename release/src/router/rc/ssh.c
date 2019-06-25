@@ -23,7 +23,7 @@ static inline int check_host_key(const char *ktype, const char *nvname, const ch
 
 int start_sshd(void)
 {
-	char buf[sizeof("255.255.255.255:65535")], *port;
+	char buf[sizeof("255.255.255.255:65535")], *port, akey[8192 + 1];
 	char *dropbear_argv[] = { "dropbear",
 		"-p", buf,	/* -p [address:]port */
 		"-a",
@@ -42,6 +42,14 @@ int start_sshd(void)
 
 	mkdir("/etc/dropbear", 0700);
 	mkdir("/root/.ssh", 0700);
+
+	if (strlen(nvram_safe_get("sshd_authkeys")) == 0)
+	{
+		int c = 0;
+		memset(akey, 0, sizeof(akey));
+		if ( (c = f_read_string("/.ssh/authorized_keys", akey, sizeof(akey)-1)) > 0 )
+			nvram_set("sshd_authkeys", akey);
+	}
 
 	f_write_string("/root/.ssh/authorized_keys", nvram_safe_get("sshd_authkeys"), 0, 0700);
 
