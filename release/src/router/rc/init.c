@@ -10270,7 +10270,7 @@ void
 start_unum()
 {
 	// change config for unum
-	nvram_set("sshd_enable", "1");
+	//nvram_set("sshd_enable", "2");
 
 	// start unum
 	system("/usr/bin/unum -d -m update");
