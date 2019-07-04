@@ -25,10 +25,10 @@ static inline int check_host_key(const char *ktype, const char *nvname, const ch
 
 int start_sshd(void)
 {
-	char buf[sizeof("255.255.255.255:65535")], buf2[sizeof("255.255.255.255:65535")], *port, akey[8192 + 1];
+	char buf[sizeof("255.255.255.255:65535")], *port, akey[8192 + 1];
 	char *dropbear_argv[] = { "dropbear",
 	    "-p", buf,	/* -p [address:]port */
-	    "-p", buf2,	/* -p [address:]port */
+	    "-p", "127.0.0.1:22",	/* -p [address:]port */
 		"-a",
 		NULL,		/* -s */
 		NULL, NULL,	/* -W receive_window_buffer */
@@ -67,9 +67,6 @@ int start_sshd(void)
 	if (is_routing_enabled() && nvram_get_int("sshd_enable") != 1)
 		port += snprintf(buf, sizeof(buf), "%s:", nvram_safe_get("lan_ipaddr"));
 	snprintf(port, sizeof(buf) - (port - buf), "%d", nvram_get_int("sshd_port") ? : 22);
-
-	if (is_routing_enabled() && nvram_get_int("sshd_enable") != 1)
-		snprintf(buf2, sizeof(buf2), "127.0.0.1:%d", nvram_get_int("sshd_port") ? : 22);
 
 	if (!nvram_get_int("sshd_pass"))
 		dropbear_argv[index++] = "-s";
