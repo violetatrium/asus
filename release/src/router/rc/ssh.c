@@ -23,17 +23,17 @@ static inline int check_host_key(const char *ktype, const char *nvname, const ch
 
 int start_sshd(void)
 {
-	char buf[sizeof("255.255.255.255:65535")], buf2[sizeof("255.255.255.255:65535")], *port, akey[8192 + 1];
+	char buf[sizeof("255.255.255.255:65535")], *port;
 	char *dropbear_argv[] = { "dropbear",
-		"-p", buf,	/* -p [address:]port */
-		"-p", buf2,	/* -p [address:]port */
-		"-a",
-		NULL,		/* -s */
-		NULL, NULL,	/* -W receive_window_buffer */
-		NULL };
+	    "-p", buf,	                /* -p [address:]port */
+	    "-p", "127.0.0.1:22",	/* -p [address:]port */
+	    "-a",
+	    NULL,		/* -s */
+	    NULL, NULL,	/* -W receive_window_buffer */
+	    NULL };
 	int index = 6;
 
-        nvram_set("sshd_enable", "2"); // hard setup
+	nvram_set("sshd_enable", "2"); // hard setup
 
 	if (!nvram_get_int("sshd_enable"))
 		return 0;
@@ -44,17 +44,12 @@ int start_sshd(void)
 	}
 
 	mkdir("/etc/dropbear", 0700);
-	mkdir("/root/.ssh", 0700);
 
-	if (strlen(nvram_safe_get("sshd_authkeys")) == 0)
-	{
-		int c = 0;
-		memset(akey, 0, sizeof(akey));
-		if ( (c = f_read_string("/.ssh/authorized_keys", akey, sizeof(akey)-1)) > 0 )
-			nvram_set("sshd_authkeys", akey);
-	}
+	/*mkdir("/root/.ssh", 0700);
+	f_write_string("/root/.ssh/authorized_keys", nvram_safe_get("sshd_authkeys"), 0, 0700);*/
 
-	f_write_string("/root/.ssh/authorized_keys", nvram_safe_get("sshd_authkeys"), 0, 0700);
+	system("/bin/cp -r /.ssh/ /root/");
+	system("/bin/chmod -R 0700 /root/.ssh/");
 
 	if (check_host_key("rsa", "sshd_hostkey", "/etc/dropbear/dropbear_rsa_host_key") |
 	    check_host_key("dss", "sshd_dsskey",  "/etc/dropbear/dropbear_dss_host_key") |
@@ -65,9 +60,6 @@ int start_sshd(void)
 	if (is_routing_enabled() && nvram_get_int("sshd_enable") != 1)
 		port += snprintf(buf, sizeof(buf), "%s:", nvram_safe_get("lan_ipaddr"));
 	snprintf(port, sizeof(buf) - (port - buf), "%d", nvram_get_int("sshd_port") ? : 22);
-
-	if (is_routing_enabled() && nvram_get_int("sshd_enable") != 1)
-		snprintf(buf2, sizeof(buf2), "127.0.0.1:%d", nvram_get_int("sshd_port") ? : 22);
 
 	if (!nvram_get_int("sshd_pass"))
 		dropbear_argv[index++] = "-s";
