@@ -1,0 +1,2 @@
+1. This build is based on GPL_VZW-AC1300_3.0.0.4.382.20310-g1bf7f51.tgz version
+
