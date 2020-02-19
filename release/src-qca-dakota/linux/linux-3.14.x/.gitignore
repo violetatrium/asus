@@ -1,0 +1,115 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# NOTE! Please use 'git ls-files -i --exclude-standard'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+#
+# Normal rules
+#
+.*
+*.o
+*.o.*
+*.a
+*.s
+*.ko
+*.so
+*.so.dbg
+*.mod.c
+*.i
+*.lst
+*.symtypes
+*.order
+modules.builtin
+*.elf
+*.bin
+*.gz
+*.bz2
+*.lzma
+*.xz
+*.lzo
+*.patch
+*.gcno
+
+#
+# Top-level generic files
+#
+/tags
+/TAGS
+/linux
+/vmlinux
+/vmlinuz
+/System.map
+/Module.markers
+/Module.symvers
+
+#
+# git files that we don't want to ignore even it they are dot-files
+#
+!.gitignore
+!.mailmap
+
+#
+# Generated include files
+#
+include/config
+include/linux/version.h
+include/generated
+arch/*/include/generated
+
+# stgit generated dirs
+patches-*
+
+# quilt's files
+patches
+series
+
+# cscope files
+cscope.*
+ncscope.*
+
+# gnu global files
+GPATH
+GRTAGS
+GSYMS
+GTAGS
+
+*.orig
+*~
+\#*#
+
+# Exras specifc here
+arch/arm/kernel/vmlinux.lds
+config_current
+config_rt-ac58u
+crypto/asymmetric_keys/x509-asn1.c
+crypto/asymmetric_keys/x509-asn1.h
+crypto/asymmetric_keys/x509_rsakey-asn1.c
+crypto/asymmetric_keys/x509_rsakey-asn1.h
+kernel/hz.bc
+kernel/timeconst.h
+lib/crc32table.h
+lib/gen_crc32table
+lib/oid_registry_data.c
+scripts/asn1_compiler
+scripts/basic/fixdep
+scripts/dtc/dtc
+scripts/dtc/dtc-lexer.lex.c
+scripts/dtc/dtc-parser.tab.c
+scripts/dtc/dtc-parser.tab.h
+scripts/kallsyms
+scripts/kconfig/conf
+scripts/kconfig/zconf.hash.c
+scripts/kconfig/zconf.lex.c
+scripts/kconfig/zconf.tab.c
+scripts/mod/devicetable-offsets.h
+scripts/mod/elfconfig.h
+scripts/mod/mk_elfconfig
+scripts/mod/modpost
+scripts/sortextable
+scripts/squashfs/mksquashfs
+scripts/unifdef
+usr/gen_init_cpio
+
