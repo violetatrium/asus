@@ -1100,7 +1100,7 @@ struct nvram_tuple router_defaults[] = {
 #endif
 #endif
 #ifdef RTCONFIG_QCA
-	{ "qca_sfe", "1" },
+	{ "qca_sfe", "0" },
 #if defined(RTCONFIG_SOC_IPQ8064)
 	/* Define QCA specific nvram variable to enable/disable GRO on
 	 * LAN and WAN interface temporarilly.
