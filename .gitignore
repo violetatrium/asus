@@ -2889,4 +2889,5 @@ release/src/router/lighttpd-1.4.39/missing
 release/src/router/lighttpd-1.4.39/src/Makefile.in
 #release/src/router/pcre-8.31/configure
 release/src/router/wget/build-aux/test-driver
+release/src/router/iptables-1.4.x/autom4te.cache
 

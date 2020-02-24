@@ -32,7 +32,6 @@ else
 	echo "This model is not supported yet"
 	exit 1
 fi
-mydir=`pwd`
 
 echo $UNUM
 echo $MODEL
@@ -42,8 +41,15 @@ export STAGING_DIR=/opt/openwrt-gcc463.arm
 # Create a link to provision file
 #ln -sf /var/provision_info.htm release/src-qca-dakota/router/www/provision_info.htm
 
+# Dealing with artefacts leftover mess (till normal fix)
+touch release/src/router/openssl-1.0.0q/Makefile
+touch release/src/router/libdaemon/configure
+touch release/src/router/libxml2/configure
+
+mydir=`pwd`
 cd release/src-qca-dakota/
 make $MODEL
 cd $mydir
 mkdir -p firmware
 cp $fw firmware/firmware_sysupgrade.bin
+
