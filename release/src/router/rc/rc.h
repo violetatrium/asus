@@ -1479,4 +1479,8 @@ extern void stop_erp_monitor();
 extern void start_erp_monitor();
 #endif
 
+// Start/stop Minim services
+extern void start_unum();
+extern void stop_unum();
+
 #endif	/* __RC_H__ */

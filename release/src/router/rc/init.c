@@ -1377,7 +1377,6 @@ restore_defaults(void)
 #ifdef RTCONFIG_DHDAP
 	int i;
 #endif
-
 	nvram_unset(ASUS_STOP_COMMIT);
 	nvram_unset(LED_CTRL_HIPRIO);
 
@@ -1400,7 +1399,6 @@ restore_defaults(void)
 
 	if (restore_defaults) {
 		fprintf(stderr, "\n## Restoring defaults... ##\n");
-//		logmessage(LOGNAME, "Restoring defaults...");	// no use
 	}
 
 	restore_defaults_g = restore_defaults;
@@ -6947,20 +6945,6 @@ void config_format_compatibility_handler(void)
 	adjust_access_restrict_config();
 }
 
-void
-start_unum()
-{
-	system("/usr/bin/unum -d -m update");
-	system("/usr/bin/unum -d -m support");
-	system("/usr/bin/unum -d");
-}
-
-void
-change_config_for_unum()
-{
-	nvram_set("sshd_enable", "2");	
-}
-
 int init_main(int argc, char *argv[])
 {
 	int state, i;
@@ -7169,10 +7153,6 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 #endif	/* CONFIG_BCMWL5 */
 			}
 			start_wan();
-
-			change_config_for_unum();
-			// Minim Serverices
-			start_unum();
 
 #ifdef RTCONFIG_QTN	/* AP and Repeater mode, workaround to infosvr, RT-AC87U bug#38, bug#44, bug#46 */
 			if (nvram_get_int("sw_mode") == SW_MODE_REPEATER ||

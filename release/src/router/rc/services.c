@@ -3051,6 +3051,27 @@ stop_httpd(void)
 #endif
 }
 
+void
+start_unum()
+{
+	/* enable SSH (it's disabled by default in Asus firmware) */
+	nvram_set("sshd_enable", "2");
+	nvram_commit();
+	/* start Minim agent daemons */
+	system("/usr/bin/unum -d -m update");
+	system("/usr/bin/unum -d -m support");
+	system("/usr/bin/unum -d");
+}
+
+void
+stop_unum()
+{
+	system("/bin/kill -9 `cat /var/run/unum-updater_monitor.pid` `cat /var/run/unum-updater.pid`");
+	system("/bin/kill -9 `cat /var/run/unum-support.pid`");
+	system("/bin/kill -9 `cat /var/run/unum-monitor.pid` `cat /var/run/unum-agent.pid`");
+	system("/bin/rm /va/run/unum-*.pid");
+}
+
 //////////vvvvvvvvvvvvvvvvvvvvvjerry5 2009.07
 void
 stop_rstats(void)
@@ -5525,6 +5546,8 @@ start_services(void)
 	start_erp_monitor();
 #endif
 
+	start_unum();
+
 	return 0;
 
 }
@@ -5658,6 +5681,8 @@ stop_logger(void)
 void
 stop_services(void)
 {
+	stop_unum();
+
 #if !(defined(RTCONFIG_QCA) || defined(RTCONFIG_RALINK) || defined(RTCONFIG_REALTEK))
 	stop_erp_monitor();
 #endif
@@ -6484,6 +6509,7 @@ again:
 	}
 	else if(strcmp(script, "upgrade") == 0) {
 		if(action&RC_SERVICE_STOP) {
+			stop_unum();
 #ifdef RTCONFIG_WIRELESSREPEATER
 		if(nvram_get_int("sw_mode") == SW_MODE_REPEATER)
 			stop_wlcconnect();

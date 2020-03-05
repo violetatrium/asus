@@ -19,6 +19,7 @@ struct nvram_tuple router_defaults[] = {
 	// NVRAM for restore_defaults: system wide parameters
 	{ "nvramver", RTCONFIG_NVRAM_VER },
 	{ "restore_defaults",	"0" },		// Set to 0 to not restore defaults on boot
+	{ "restore_from_cloud", "10", 0 },	// Minim: always try to restore from cloud after reset
 #ifdef RPAC68U
 	{ "sw_mode", "2" },			// big switch for different mode
 #elif defined(RTCONFIG_DEFAULT_AP_MODE)
