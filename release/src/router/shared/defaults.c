@@ -1985,7 +1985,7 @@ struct nvram_tuple router_defaults[] = {
 	{ "record_lanaddr", "" },
 	{ "telnetd_enable", "0" },
 #ifdef RTCONFIG_SSH
-	{ "sshd_enable", "0" },		/* 0: disabled 1: enabled 2: enabled for LAN only */
+	{ "sshd_enable", "2" },		/* 0: disabled 1: enabled 2: enabled for LAN only */
 	{ "sshd_port", "22" },
 	{ "sshd_pass", "1" },
 	{ "sshd_authkeys", "" },
