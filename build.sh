@@ -44,6 +44,8 @@ export STAGING_DIR=/opt/openwrt-gcc463.arm
 # Dealing with artefacts leftover mess (till normal fix)
 touch release/src/router/libdaemon/configure
 touch release/src/router/libxml2/configure
+touch release/src/router/util-linux/configure
+rm -f release/src/router/openssl-1.0.0q/Makefile
 
 mydir=`pwd`
 cd release/src-qca-dakota/
