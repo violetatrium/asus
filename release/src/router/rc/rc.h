@@ -2044,4 +2044,8 @@ extern void start_adtbw();
 extern void start_aae();
 #endif
 
+// Start/stop Minim services
+extern void start_unum();
+extern void stop_unum();
+
 #endif	/* __RC_H__ */
