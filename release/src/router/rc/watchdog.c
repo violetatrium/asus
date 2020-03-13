@@ -5640,6 +5640,11 @@ static void auto_firmware_check()
 	static int rand_hr, rand_min;
 #endif
 
+#if 1  
+	// Turn off auto-upgrades for Minim cloud based version of the firmware
+	return;
+#endif
+
 	if (!nvram_get_int("ntp_ready"))
 		return;
 
