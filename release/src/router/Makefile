@@ -3898,6 +3898,7 @@ curl-7.21.7/Makefile: curl-7.21.7/configure
 	@cd curl-7.21.7 && $(CONFIGURE) CC=$(CC) \
 		--prefix=/usr --bindir=/usr/sbin --libdir=/usr/lib \
 		--enable-http --with-ssl=$(TOP)/openssl LDFLAGS="-ldl" \
+		--enable-threaded-resolver \
 
 curl-7.21.7-install: curl-7.21.7
 	@$(SEP)
