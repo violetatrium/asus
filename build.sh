@@ -41,10 +41,11 @@ export STAGING_DIR=/opt/openwrt-gcc463.arm
 # Create a link to provision file
 #ln -sf /var/provision_info.htm release/src-qca-dakota/router/www/provision_info.htm
 
-# Dealing with artefacts leftover mess (till normal fix)
-touch release/src/router/libdaemon/configure
-touch release/src/router/libxml2/configure
-touch release/src/router/util-linux/configure
+# Dealing with artifacts leftover mess (till normal fix)
+cp -f release/src/router/libdaemon/configure.orig release/src/router/libdaemon/configure
+rm -f release/src/router/libdaemon/stamp-h1
+cp -f release/src/router/libxml2/configure.orig release/src/router/libxml2/configure
+rm -f release/src/router/libxml2/stamp-h1
 rm -f release/src/router/openssl-1.0.0q/Makefile
 
 mydir=`pwd`

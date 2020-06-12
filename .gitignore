@@ -6,8 +6,8 @@
 *.dtb.cmd
 firmware/
 release/src/router/extendno.conf
-#release/src/router/libdaemon/configure
-#release/src/router/libxml2/configure
+release/src/router/libdaemon/configure
+release/src/router/libxml2/configure
 release/src/router/lighttpd-1.4.39/Makefile.in
 release/src/router/lighttpd-1.4.39/aclocal.m4
 release/src/router/lighttpd-1.4.39/config.h.in
