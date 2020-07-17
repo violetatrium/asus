@@ -4976,8 +4976,9 @@ leave:
 
 	if (restart_upnp) start_upnp();
 
-	// We have to kill Minim agent to force restart and reset of the rules
-	system("[ -e /var/run/unum-agent.pid ] && /bin/kill -9 `cat /var/run/unum-agent.pid`");
+	// We have to reapply unum agent firewall rules
+	system("[ -e /tmp/firewall_unum_blacklist ] && . /tmp/firewall_unum_blacklist");
+	system("[ -e /tmp/firewall_unum_dns ] && . /tmp/firewall_unum_dns");
 
 	return 0;
 }
