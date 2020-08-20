@@ -956,11 +956,11 @@ void start_dnsmasq(void)
 		}
 		else
 			unlink("/etc/dnsmasq.conf");
-#endif
+#endif /* RTCONFIG_DHCP_OVERRIDE */
 
 		eval("dnsmasq", "--log-async");
 	}
-#endif
+#endif /* RTCONFIG_REDIRECT_DNAME */
 	if (!is_routing_enabled()
 #ifdef RTCONFIG_WIRELESSREPEATER
 	 && nvram_get_int("sw_mode") != SW_MODE_REPEATER
@@ -1006,12 +1006,20 @@ void start_dnsmasq(void)
 	fprintf(fp, "resolv-file=%s\n",		// the real stuff is here
 		dmresolv);
 
+	/* EDNS0, Minim add-on */
+	int cache_size = 1500;
+	int add_mac = nvram_get_int("dns_add_mac"); /* 0 - off, 1 - text, 2 - base64 */
+	if(add_mac > 0) {
+		cache_size = 0;
+		fprintf(fp, "add-mac=%s\n", (add_mac > 1) ? "base64" : "text");
+	}
+
 	fprintf(fp, "servers-file=%s\n"		// additional servers list
 		    "no-poll\n"			// don't poll resolv file
 		    "no-negcache\n"		// don't cace nxdomain
 		    "cache-size=%u\n"		// dns cache size
 		    "min-port=%u\n",		// min port used for random src port
-		dmservers, 1500, nvram_get_int("dns_minport") ? : 4096);
+		dmservers, cache_size, nvram_get_int("dns_minport") ? : 4096);
 
 	/* lan domain */
 	value = nvram_safe_get("lan_domain");
