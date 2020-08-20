@@ -1306,12 +1306,20 @@ void start_dnsmasq(void)
 		dmresolv);
 #endif
 
+	/* EDNS0, Minim add-on */
+	int cache_size = 1500;
+	int add_mac = nvram_get_int("dns_add_mac"); /* 0 - off, 1 - text, 2 - base64 */
+	if(add_mac > 0) {
+		cache_size = 0;
+		fprintf(fp, "add-mac=%s\n", (add_mac > 1) ? "base64" : "text");
+	}
+
 	fprintf(fp, "servers-file=%s\n"		// additional servers list
 		    "no-poll\n"			// don't poll resolv file
 		    "no-negcache\n"		// don't cace nxdomain
 		    "cache-size=%u\n"		// dns cache size
 		    "min-port=%u\n",		// min port used for random src port
-		dmservers, 1500, nvram_get_int("dns_minport") ? : 4096);
+		dmservers, cache_size, nvram_get_int("dns_minport") ? : 4096);
 
 	/* limit number of outstanding requests */
 	{
