@@ -47,3 +47,4 @@ make $MODEL
 cd $mydir
 mkdir -p firmware
 cp $fw firmware/firmware_sysupgrade.bin
+ls -l "$PWD/firmware/firmware_sysupgrade.bin"
