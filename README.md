@@ -44,6 +44,7 @@ Build involves two steps ie preparing the build system and build instructions.
                 git (or git-core)
                 gitk
                 zlib1g-dev
+                pkg-config
                 autoconf
                 autopoint (or gettext)
                 libtool
