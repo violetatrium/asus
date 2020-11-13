@@ -40,6 +40,7 @@ Build involves two steps ie preparing the build system and build instructions.
                 g++-4.4
                 g++
                 gengetopt
+                lib32z1-dev
                 git (or git-core)
                 gitk
                 zlib1g-dev
@@ -83,6 +84,7 @@ Build involves two steps ie preparing the build system and build instructions.
                         libncurses5:i386
                         ia32-libs
                         libc6-dev-i386
+                        gcc-multilib g++-multilib
 
         b. Fedora
                 python 2.7 or above.
