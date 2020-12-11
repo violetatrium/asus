@@ -11,17 +11,18 @@ if [ "$1" == "--add" ]; then
     echo "Please specify full path to the file."
     exit 1
   fi
-  MODEL="$3"
+  MODEL="${3:-asus_map_ac1300}"
   cp $UNUM release/src/router/unum/unum.tgz
   echo "Building firmware with $UNUM..."
 elif [ "$1" == "--no-changes" ]; then
   unset UNUM
   echo "Building firmware without changes."
-  MODEL="$2"
+  MODEL="${2:-asus_map_ac1300}"
 else
-  echo "Usage: $0 <--add <path_to_unum.tgz> <Asus_HW_MODEL> |--no-changes> <Asus_HW_MODEL>"
+  echo "Usage: $0 <<--add <path_to_unum.tgz> | --no-changes>> [HW_MODEL]"
   echo "Build the Asus based firmware with UNUM additons (--add option)"
-  echo "or without them (--no-changes) option."
+  echo "or without them (--no-changes) option. The default hardware model:"
+  echo "asus_map_ac1300"
   exit 2
 fi
 
